@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <script type="text/javascript" src="../dist/sparrow-claw.js"></script>
+  <title>pan</title>
+  <style>
+    #app {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      bottom: 20px;
+      right: 20px;
+    }
+
+    #app > div {
+      margin-bottom: 10px;
+      background-color: brown;
+      height: 30%;
+      color: #fff;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="app">
+    <div id="pan">
+      <div>所有方向</div>
+      <hr>
+      <div class="start"></div>
+      <div class="move"></div>
+      <div class="end"></div>
+    </div>
+    <div id="pan-x">
+      <div>水平方向</div>
+      <hr>
+      <div class="start"></div>
+      <div class="move"></div>
+      <div class="end"></div>
+    </div>
+    <div id="pan-y">
+      <div>垂直方向</div>
+      <hr>
+      <div class="start"></div>
+      <div class="move"></div>
+      <div class="end"></div>
+    </div>
+  </div>
+
+  <script type="text/javascript">
+    var divs = document.querySelectorAll('#app > div');
+    for (let i = 0, len = divs.length; i < len; i++) {
+      var div = divs[i];
+      var g;
+      switch (div.id) {
+        case 'pan':
+          g = 'pan';
+          break;
+        case 'pan-x':
+          g = 'panX';
+          break;
+        case 'pan-y':
+          g = 'panY';
+          break;
+      }
+      var claw = new SparrowClaw(div, g);
+      div.addEventListener('panstart', function (e) {
+        this.querySelector('.start').innerHTML = '开始：pos(' + e.detail.x + ', ' + e.detail.y + ')';
+      });
+      div.addEventListener('panmove', function (e) {
+        this.querySelector('.move').innerHTML = '移动：pos(' + e.detail.x + ', ' + e.detail.y + ') speed(' + e.detail.speedX.toFixed(4) + ',' + e.detail.speedY.toFixed(4) + ')';
+      });
+      /*
+      div.addEventListener('panend', function (e) {
+        this.querySelector('.end').innerHTML = '结束：pos(' + e.detail.x + ', ' + e.detail.y + ')';
+      });
+      */
+      // try other way
+      claw.on('panend', function(el, eventName, state, originalEvent) {
+        el.querySelector('.end').innerHTML = '结束：pos(' + state.x + ', ' + state.y + ')';
+      });
+    }
+  </script>
+</body>

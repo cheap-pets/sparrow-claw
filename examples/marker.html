@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <script type="text/javascript" src="../dist/sparrow-claw.js"></script>
+  <title>pinch</title>
+  <style>
+    #app {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      bottom: 10px;
+      right: 10px;
+      border: 3px dashed silver;
+    }
+    #wrap > img {
+      transform-origin: 0 0;
+    }
+    .marker {
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      border-radius: 8px;
+      background-color: brown;
+      border:4px solid #fff;
+      box-sizing: border-box;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="app">
+    <div id="wrap">
+      <img>
+    </div>
+  </div>
+
+  <script type="text/javascript">
+    var markers = [];
+    var divApp = document.querySelector('#app');
+    var wrap = divApp.querySelector('#wrap');
+    var rect = wrap.getBoundingClientRect();
+    var img = wrap.querySelector('img');
+    var width;
+    var height;
+    var minScale;
+    var maxScale = 5;
+    var scale = 1;
+    var transX;
+    var transY;
+    function setScale(value) {
+      if (scale === value) return;
+      scale = value;
+      img.style.webkitTransform = 'scale(' + value + ')';
+      markers.forEach(function (marker) {
+        marker.el.style.left = (marker.x * scale - 8) + 'px';
+        marker.el.style.top = (marker.y * scale - 8) + 'px';
+      });
+    }
+    function setTranslate(x, y) {
+      if (transX === x && transY === y) return;
+      wrap.style.webkitTransform = 'translate3d(' + x + 'px,' + y + 'px, 0)';
+      transX = x;
+      transY = y;
+    }
+    function reviseTransform() {
+      if (scale < minScale) setScale(minScale);
+      else if (scale > maxScale) setScale(maxScale);
+      var x = transX;
+      var y = transY;
+      var minX = divApp.clientWidth - width * scale;
+      var minY = divApp.clientHeight - height * scale;
+      if (x > 0) x = 0;
+      else if (x < minX) x = minX;
+      if (y > 0 || divApp.clientHeight > height * scale) y = 0;
+      else if (y < minY) y = minY;
+      setTranslate(x, y);
+    }
+    function createMarker(x, y) {
+      var marker = {
+        x: (x - rect.left - transX) / scale,
+        y: (y - rect.top - transY) / scale
+      };
+      var div = document.createElement('div');
+      div.className = 'marker';
+      div.style.left = (marker.x * scale - 8) + 'px';
+      div.style.top = (marker.y * scale - 8) + 'px';
+      wrap.appendChild(div);
+      marker.el = div;
+      markers.push(marker);
+    }
+    img.addEventListener('load', function () {
+      minScale = divApp.clientWidth / this.offsetWidth;
+      width = this.offsetWidth;
+      height = this.offsetHeight;
+      setTranslate(0, 0);
+      setScale(minScale);
+    });
+    img.src = './asserts/demo.jpg';
+    document.addEventListener('touchstart', function (e) {
+      e.preventDefault();
+    });
+    var claw = new SparrowClaw(img, ['pan', 'pinch', 'press']);
+    var startScale;
+    var startX;
+    var startY;
+    var newX;
+    var newY;
+    img.addEventListener('panstart', function(e) {
+      startX = transX;
+      startY = transY;
+    });
+    img.addEventListener('panmove', function(e) {
+      setTranslate(startX + e.detail.totalX, startY + e.detail.totalY);
+    });
+    img.addEventListener('panend', function(e) {
+      reviseTransform();
+    });
+    img.addEventListener('pinchstart', function(e) {
+      startScale = scale;
+      startX = transX;
+      startY = transY;
+    });
+    img.addEventListener('pinchmove', function(e) {
+      var newScale = startScale * e.detail.pinchRatio;
+      newX = startX + width * (startScale - newScale) / 2;
+      newY = startY + height * (startScale - newScale) / 2;
+      setScale(newScale);
+      setTranslate(newX, newY);
+    });
+    img.addEventListener('pinchend', function(e) {
+      reviseTransform();
+    });
+    img.addEventListener('press', function(e) {
+      createMarker(e.detail.x, e.detail.y);
+    });
+  </script>
+</body>

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <script type="text/javascript" src="../dist/sparrow-claw.js"></script>
+  <title>pinch</title>
+  <style>
+    #app {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      bottom: 20px;
+      right: 20px;
+      background-color: brown;
+      color: #fff;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="app">
+    <div id="start"></div>
+    <div id="move"></div>
+    <div id="end"></div>
+  </div>
+
+  <script type="text/javascript">
+    document.addEventListener('touchstart', function (e) {
+      e.preventDefault();
+    });
+    var divApp = document.querySelector('#app');
+    var divStart = document.querySelector('#start');
+    var divMove = document.querySelector('#move');
+    var divEnd = document.querySelector('#end');
+    var claw = new SparrowClaw(divApp, 'pinch');
+    divApp.addEventListener('pinchstart', function(e) {
+      divStart.innerHTML = '开始：center(' + e.detail.centerX + ', ' + e.detail.centerY + ')';
+    });
+    divApp.addEventListener('pinchmove', function(e) {
+      divMove.innerHTML = '移动：center(' + e.detail.centerX + ', ' + e.detail.centerY + ') ratio(' + e.detail.pinchRatio.toFixed(4) + ')';
+    });
+    divApp.addEventListener('pinchend', function(e) {
+      divEnd.innerHTML = '结束：center(' + e.detail.centerX + ', ' + e.detail.centerY + ')';
+    });
+  </script>
+</body>

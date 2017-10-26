@@ -1,0 +1,35 @@
+{
+  "name": "sparrow-claw",
+  "version": "0.0.1",
+  "description": "a easier gesture event framework",
+  "main": "dist/sparrow-claw.js",
+  "module": "src/index.js",
+  "scripts": {
+    "build": "node build/build.js",
+    "start": "node example-server/index.js"
+  },
+  "author": "scrollbar.ww",
+  "files": [
+    "src",
+    "dist"
+  ],
+  "keywords": [
+    "sparrow"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cheap-pets/sparrow-claw.git"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "babel-core": "^6.26.0",
+    "babel-plugin-external-helpers": "^6.22.0",
+    "babel-preset-env": "^1.6.1",
+    "fs-extra": "^4.0.2",
+    "henhouse": "^1.0.1",
+    "rollup": "^0.50.0",
+    "rollup-plugin-babel": "^3.0.2",
+    "rollup-plugin-node-resolve": "^3.0.0"
+  },
+  "dependencies": {}
+}
