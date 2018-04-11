@@ -6,8 +6,8 @@ const babel = require('rollup-plugin-babel');
 //const uglify = require('rollup-plugin-uglify');
 
 //const: source path & dist path
-const srcRoot = path.resolve(__dirname, '..', 'src');
-const distRoot = path.join(__dirname, '..', 'dist');
+const srcRoot = path.resolve(__dirname, 'src');
+const distRoot = path.join(__dirname, 'dist');
 
 const input = path.join(srcRoot, 'index.js');
 const output = path.join(distRoot, 'sparrow-claw.js');

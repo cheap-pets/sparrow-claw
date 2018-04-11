@@ -1,0 +1,27 @@
+{
+  "root": true,
+  "extends": [
+    "standard"
+  ],
+  "globals": {
+
+  },
+  "env": {
+    "browser": true,
+    "es6": true
+  },
+  "rules": {
+    "max-len": [
+      1,
+      {
+        "code": 120,
+        "tabWidth": 2,
+        "ignoreComments": true,
+        "ignoreTrailingComments": true,
+        "ignoreUrls": true,
+        "ignoreStrings": true,
+        "ignoreTemplateLiterals": true
+      }
+    ]
+  }
+}

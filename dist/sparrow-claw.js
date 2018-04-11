@@ -6,7 +6,7 @@
 
 var recognizer = {
   recognize: function recognize(state, event, option) {
-    if (Math.abs(state.totalX) > option.distance || Math.abs(state.totalY) > option.distance) {
+    if (Math.abs(state.totalX) > option.distance || Math.abs(state.totalY) > option.distance || event.touches.length > 1) {
       return false;
     }
     if (state.stage === 'end' && (option.timespan === 0 || state.totalTime < option.timespan)) {
@@ -22,7 +22,7 @@ var recognizer = {
 
 var recognizer$1 = {
   recognize: function recognize(state, event, option) {
-    if (Math.abs(state.totalX) > option.distance || Math.abs(state.totalY) > option.distance) {
+    if (Math.abs(state.totalX) > option.distance || Math.abs(state.totalY) > option.distance || event.touches.length > 1) {
       return false;
     }
     if ((option.timer || state.stage === 'end') && state.totalTime >= option.timespan) {
@@ -239,8 +239,7 @@ function Claw(el, options) {
       if (timer) clearTimeout(timer);
       this.state = null;
     }
-  };
-  (isArray(options) ? options : [options]).forEach(function (v) {
+  };(isArray(options) ? options : [options]).forEach(function (v) {
     if (!v) return;
     var gesture = typeof v === 'string' ? { type: v } : isArray(v) ? { type: v[0], option: v[1] } : v;
     var recognizer = gesture.type ? recognizers[gesture.type] : null;
