@@ -38,7 +38,7 @@ const recognizer = {
       this.emit('pinch', 'pinchmove', event)
     }
   },
-  defaultOption: {
+  options: {
     distance: 10
   }
 }

@@ -1,47 +1,34 @@
-import { isArray, isFunction, isObject, isString } from 'lodash'
-import { dispatchCustomEvent, hackAddEventListener, hackRemoveEventListener } from './event'
+import EventTypes from './event-types'
+import { hackAddEventListener, hackRemoveEventListener } from './hack-element-event'
+import { bindTouchEvents, unbindTouchEvents } from './touch-event'
 
-const EventTypes = [
-  'tap',
-  'press',
-  'panstart',
-  'panmove',
-  'panend',
-  'panx',
-  'panxstart',
-  'panxmove',
-  'panxend',
-  'panystart',
-  'panymove',
-  'panyend',
-  'pinchstart',
-  'pinchmove',
-  'pinchend'
-]
+function register (el) {
+  const claw = el.__claw = {
+    listeners: {}
+  }
+  bindTouchEvents(el)
+  return claw
+}
+function unregister (el) {
+  unbindTouchEvents(el)
+  delete el.__claw
+}
 
-function registerListener (el, type, fn) {
+hackAddEventListener(function (type, fn) {
   if (EventTypes.indexOf(type) < 0) return
-  el.__claw || (el.__claw = { listeners: {} })
-  const listeners = el.__claw.listeners
+  const { listeners } = this.__claw || register(this)
   if (!listeners[type]) listeners[type] = []
   listeners[type].push(fn)
-}
-function unregisterListener (el, type, fn) {
-  if (EventTypes.indexOf(type) < 0 || !el.__claw) return
-  const listeners = el.__claw.listeners
+})
+
+hackRemoveEventListener(function (type, fn) {
+  if (EventTypes.indexOf(type) < 0 || !this.__claw) return
+  const { listeners } = this.__claw
   const tl = listeners[type]
   const idx = tl ? tl.indexOf(fn) : -1
   if (idx >= 0) {
     tl.splice(idx, 0)
     if (tl.length < 1) delete listeners[type]
-    if (Object.keys(listeners).length < 1) delete el.__claw
+    if (Object.keys(listeners).length < 1) unregister(this)
   }
-}
-
-hackAddEventListener(function (type, fn) {
-  registerListener(this, type, fn)
-})
-
-hackRemoveEventListener(function (type, fn) {
-  unregisterListener(this, type, fn)
 })

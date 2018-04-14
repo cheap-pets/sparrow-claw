@@ -21,7 +21,7 @@ const recognizer = {
       this.emit('pan', 'panmove', event)
     }
   },
-  defaultOption: {
+  options: {
     direction: GESTURE_DIRECTION.ALL,
     distance: 10
   }
@@ -31,7 +31,7 @@ const xRecognizer = {
   recognize (state, event, option) {
     return recognizer.recognize.call(this, state, event, option, 'panX')
   },
-  defaultOption: {
+  options: {
     direction: GESTURE_DIRECTION.HORIZONTAL,
     distance: 10
   }
@@ -41,7 +41,7 @@ const yRecognizer = {
   recognize (state, event, option) {
     return recognizer.recognize.call(this, state, event, option, 'panY')
   },
-  defaultOption: {
+  options: {
     direction: GESTURE_DIRECTION.VERTICAL,
     distance: 10
   }

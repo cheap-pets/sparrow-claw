@@ -11,7 +11,7 @@ const recognizer = {
       this.emit('tap', 'tap', event)
     }
   },
-  defaultOption: {
+  options: {
     timespan: 0,
     distance: 10
   }

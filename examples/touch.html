@@ -4,10 +4,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <script type="text/javascript" src="../dist/sparrow-claw.js"></script>
+  <script type="text/javascript"></script>
   <title>pan</title>
   <style>
-    #app {
+    #app,
+    #inner {
       position: absolute;
       top: 100px;
       left: 20px;
@@ -16,19 +17,27 @@
       background-color: brown;
       color: #fff;
     }
+    #inner {
+      top: 300px;
+      background-color: limegreen;
+    }
   </style>
 </head>
 
 <body>
   <div id="app">
+    <div id="echo"></div>
+    <div id="inner">
+    </div>
   </div>
   <script type="text/javascript">
     document.addEventListener('touchstart', function (e) {
       e.preventDefault();
     });
-    var div = document.querySelector('#app');
+    var main = document.querySelector('#app');
+    var div = document.querySelector('#echo');
     function processEvent(event) {
-      div.innerHTML = event.type + '<hr>';
+      div.innerHTML = event.type + '<hr>' + event.data + ' | ' + event.target.id + ' | ' + event.stage + '<hr>';
       var touches = event.touches;
       var i;
       for (i = 0; i < touches.length; i++) {
@@ -46,8 +55,20 @@
         div.innerHTML += '<div>changedTouch: pos(' + changedTouch.pageX + ', ' + changedTouch.pageY + ')</div>';
       };
     }
-    div.addEventListener('touchstart', processEvent);
-    div.addEventListener('touchmove', processEvent);
-    div.addEventListener('touchend', processEvent);
+    app.addEventListener('touchstart', processEvent);
+    app.addEventListener('touchmove', processEvent);
+    app.addEventListener('touchend', processEvent);
+    var inner = document.querySelector('#inner');
+    let $touch
+    inner.addEventListener('touchmove', e => {
+      e.data = 'inner_move'
+      $touch = e.touches[0]
+      e.stage = e.stage ? e.stage+1 : 0
+    });
+    inner.addEventListener('touchend', e => {
+      e.data = 'inner_end' + ($touch === e.changedTouches[0])
+      e.stage = e.stage ? e.stage+1 : 0
+    });
   </script>
 </body>
+</html>

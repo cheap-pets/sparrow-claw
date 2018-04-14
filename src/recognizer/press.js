@@ -11,7 +11,7 @@ const recognizer = {
       this.emit('press', 'press', event, true)
     }
   },
-  defaultOption: {
+  options: {
     timespan: 500,
     distance: 10,
     timer: 500
