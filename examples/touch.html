@@ -61,12 +61,15 @@
     var inner = document.querySelector('#inner');
     let $touch
     inner.addEventListener('touchmove', e => {
-      e.data = 'inner_move'
+      for (i = 0; i < e.touches.length; i++) {
+        inner.innerHTML = ',' + (e.touches[i] === e.changedTouches[i])
+      }
+      e.data = 'inner_start'
       $touch = e.touches[0]
       e.stage = e.stage ? e.stage+1 : 0
     });
     inner.addEventListener('touchend', e => {
-      e.data = 'inner_end' + ($touch === e.changedTouches[0])
+      e.data = 'inner_end' + ($touch === e.changedTouches[0]) + $touch.pageX
       e.stage = e.stage ? e.stage+1 : 0
     });
   </script>

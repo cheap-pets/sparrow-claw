@@ -1,26 +1,36 @@
 import { dispatchCustomEvent } from './dispatch-custom-event'
 
-// global gesture state && timer
-let state, timer
+// global gesture status && timer
+let gs, timer
 
-function setGestureState (event) {
-  const { $clawed, type, touches } = event
-  const len = touches.length
-  if ((type === 'touchend' && len) || len > 1) state = false
-  if (state === false || $clawed) return
+function setTouchStatus (status, touch) {
+  const { identifier, pageX, pageY } = touch
+  if (status[identifier]) return
+  status[identifier] = {}
+}
+
+function setGestureStatus (event) {
+  const { $clawed, touches, changedTouches } = event
+  if ($clawed) return
+
   event.$clawed = true
-  if (!state) state = {}
-
-  const first = state.first
-  const last = state.timestamp ? state : null
   const timestamp = +new Date()
-  const deltaTime = last ? timestamp - last.timestamp : 0
-  const totalTime = first ? timestamp - first.timestamp : 0
+  gs = gs || { startTime: timestamp }
+
+  const deltaTime = gs.timestamp ? timestamp - gs.timestamp : 0
+  const totalTime = gs.initial ? timestamp - gs.initial.timestamp : 0
   const current = {
     timestamp,
     deltaTime,
     totalTime
   }
+  for (let i = 0, len = touches.length; i < len; i++) {
+    setTouchStatus(current, touches[i])
+  }
+  for (let i = 0, len = changedTouches.length; i < len; i++) {
+    setTouchStatus(current, changedTouches[i])
+  }
+
   if (len > 0) {
     let sumX = 0
     let sumY = 0
@@ -64,16 +74,16 @@ function initContext (event) {
 function touchStart (event) {
   if (state !== false) {
     initContext.call(this.__claw)
-    setGestureState(event)
+    setGestureStatus(event)
   }
 }
 
 function touchMove (event) {
-  setGestureState(event)
+  setGestureStatus(event)
 }
 
 function touchEnd (event) {
-  setGestureState(event)
+  setGestureStatus(event)
   delete this.__claw.ctx
 }
 
