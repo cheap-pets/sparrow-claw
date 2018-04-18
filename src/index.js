@@ -1,10 +1,12 @@
-import EventTypes from './event-types'
+import EventTypes from './gesture-event-types'
+import Recognizers from './recognizers'
 import { hackAddEventListener, hackRemoveEventListener } from './hack-element-event'
-import { bindTouchEvents, unbindTouchEvents } from './touch-event'
+import { bindTouchEvents, unbindTouchEvents } from './touch'
 
 function register (el) {
   const claw = el.__claw = {
-    listeners: {}
+    listeners: {},
+    recognizers: {}
   }
   bindTouchEvents(el)
   return claw
@@ -15,14 +17,18 @@ function unregister (el) {
 }
 
 hackAddEventListener(function (type, fn) {
-  if (EventTypes.indexOf(type) < 0) return
-  const { listeners } = this.__claw || register(this)
-  if (!listeners[type]) listeners[type] = []
+  const gesture = EventTypes[type]
+  if (!gesture) return
+  const { listeners, recognizers } = this.__claw || register(this)
+  if (!listeners[type]) {
+    listeners[type] = []
+    if (!recognizers[gesture]) recognizers[gesture] = Recognizers[gesture]
+  }
   listeners[type].push(fn)
 })
 
 hackRemoveEventListener(function (type, fn) {
-  if (EventTypes.indexOf(type) < 0 || !this.__claw) return
+  if (!EventTypes[type] || !this.__claw) return
   const { listeners } = this.__claw
   const tl = listeners[type]
   const idx = tl ? tl.indexOf(fn) : -1

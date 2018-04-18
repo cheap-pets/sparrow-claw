@@ -1,10 +1,11 @@
 import { dispatchCustomEvent } from './dispatch-custom-event'
 
 // global gesture status && timer
-let gs, timer
+const gs = {}
+let timer
 
-function setTouchStatus ({ identifier, pageX, pageY }, isEnd) {
-  const status = gs[identifier] || {}
+function calcTouchStatus ({ identifier, pageX, pageY }, isEnd) {
+  const status = gs.$touches[identifier] || {}
   let { timestamp, startTime, x, y, startX, startY } = status
   const initial = !timestamp
   const now = +new Date()
@@ -38,15 +39,17 @@ function setTouchStatus ({ identifier, pageX, pageY }, isEnd) {
         speedY: deltaY / (deltaTime || 1)
       }
   )
-  if (initial) gs[identifier] = status
+  if (initial) gs.$touches[identifier] = status
+  return status
 }
 
 function updateHoldStatus () {
-  for (let key in gs) {
-    if (key === 'over' || gs[key].state === 'end') continue
+  for (let key in gs.$touches) {
+    const touch = gs.$touches[key]
+    if (touch.state === 'end') continue
     const { timestamp, startTime } = gs[key]
     const now = +new Date()
-    Object.assign(gs[key], {
+    Object.assign(touch, {
       timestamp: now,
       totalTime: now - startTime,
       deltaTime: now - timestamp,
@@ -67,24 +70,24 @@ function setGestureStatus (event) {
   timer && clearTimeout(timer)
   event.$clawed = true
 
+  gs.touches = []
+  gs.changedTouches = []
+
   const processed = {}
   for (let i = 0, len = touches.length; i < len; i++) {
-    processed[touches[i].identifier] = true
-    setTouchStatus(touches[i])
+    const status = calcTouchStatus(touches[i])
+    gs.touches.push(status)
+    processed[status.identifier] = status
   }
   for (let i = 0, len = changedTouches.length; i < len; i++) {
-    if (processed[changedTouches[i].identifier]) continue
-    setTouchStatus(status, changedTouches[i], true)
+    const touch = changedTouches[i]
+    gs.changedTouches.push(processed[touch.identifier] || calcTouchStatus(status, touch, true))
   }
   if (!touches.length) gs.over = true
-  else {
-    timer = setTimeout(updateHoldStatus, 100)
-  }
+  else timer = setTimeout(updateHoldStatus, 100)
 }
 
-function recognize (claw) {
-
-}
+function recognize (claw) {}
 
 function initClawContext (claw, event) {
   for (let key in claw.recognizers) {
@@ -93,7 +96,10 @@ function initClawContext (claw, event) {
 }
 
 function touchStart (event) {
-  if (!gs || gs.over) gs = {}
+  if (gs.over) {
+    delete gs.over
+    gs.$touches = {}
+  }
   setGestureStatus(event)
   if (!this.$claw.current) initClawContext(this.$claw)
 }
@@ -108,10 +114,6 @@ function touchEnd (event) {
   recognize(this.$claw)
   if (gs.over) delete this.__claw.ctx
 }
-
-document.addEventListener('touchend', () => {
-  if (gs !== false) gs = null
-})
 
 export function bindTouchEvents (el) {
   el.addEventListener('touchstart', touchStart)
