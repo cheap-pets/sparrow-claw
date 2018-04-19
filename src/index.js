@@ -4,7 +4,7 @@ import { hackAddEventListener, hackRemoveEventListener } from './hack-element-ev
 import { bindTouchEvents, unbindTouchEvents } from './touch'
 
 function register (el) {
-  const claw = el.__claw = {
+  const claw = el.$claw = {
     listeners: {},
     recognizers: {}
   }
@@ -13,13 +13,13 @@ function register (el) {
 }
 function unregister (el) {
   unbindTouchEvents(el)
-  delete el.__claw
+  delete el.$claw
 }
 
 hackAddEventListener(function (type, fn) {
   const gesture = EventTypes[type]
   if (!gesture) return
-  const { listeners, recognizers } = this.__claw || register(this)
+  const { listeners, recognizers } = this.$claw || register(this)
   if (!listeners[type]) {
     listeners[type] = []
     if (!recognizers[gesture]) recognizers[gesture] = Recognizers[gesture]
@@ -28,8 +28,8 @@ hackAddEventListener(function (type, fn) {
 })
 
 hackRemoveEventListener(function (type, fn) {
-  if (!EventTypes[type] || !this.__claw) return
-  const { listeners } = this.__claw
+  if (!EventTypes[type] || !this.$claw) return
+  const { listeners } = this.$claw
   const tl = listeners[type]
   const idx = tl ? tl.indexOf(fn) : -1
   if (idx >= 0) {
@@ -38,3 +38,5 @@ hackRemoveEventListener(function (type, fn) {
     if (Object.keys(listeners).length < 1) unregister(this)
   }
 })
+
+export { Recognizers }

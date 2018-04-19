@@ -1,4 +1,5 @@
-export default function dispatchCustomEvent (el, type, { canBubble, cancelable, detail, originalEvent }) {
+export default function dispatchCustomEvent (el, type, status, options) {
+  const { canBubble, cancelable, detail, originalEvent } = options || {}
   const event = document.createEvent('CustomEvent')
   event.initCustomEvent(
     type,
@@ -6,6 +7,7 @@ export default function dispatchCustomEvent (el, type, { canBubble, cancelable, 
     cancelable === undefined ? true : cancelable,
     detail
   )
+  event.gestureStatus = status
   event.originalEvent = originalEvent
   if (el.dispatchEvent(event) === false && originalEvent) {
     originalEvent.preventDefault()

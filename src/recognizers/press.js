@@ -1,20 +1,40 @@
+import dispatchCustomEvent from '../dispatch-custom-event'
+
+function check (el, status, touch, options) {
+  if (status.activeElement) return
+  const { distance, timespan } = options
+  const { totalX, totalY, totalTime, state } = touch
+  let result
+  if ((state === 'end' && totalTime < timespan) || Math.abs(totalX) > distance || Math.abs(totalY) > distance) {
+    result = false
+  } else if (totalTime >= timespan) {
+    dispatchCustomEvent(el, 'press', status)
+    result = true
+  }
+  return result
+}
+
 const recognizer = {
-  recognize (state, event, option) {
-    if (
-      Math.abs(state.totalX) > option.distance ||
-      Math.abs(state.totalY) > option.distance ||
-      event.touches.length > 1
-    ) {
-      return false
+  recognize (el, status) {
+    const touch = status.changedTouches[0]
+    const result = check(el, status, touch, this.options)
+    if (result === undefined) {
+      setTimeout(() => {
+        const result = check(el, status, touch, this.options)
+        if (result) {
+          status.activeElement = el
+          status.activeGesture = 'press'
+        } else if (result === false && el.$claw.current) {
+          delete el.$claw.current.press
+        }
+      }, this.options.timer)
     }
-    if ((option.timer || state.stage === 'end') && state.totalTime >= option.timespan) {
-      this.emit('press', 'press', event, true)
-    }
+    return result
   },
   options: {
     timespan: 500,
     distance: 10,
-    timer: 500
+    timer: 600
   }
 }
 

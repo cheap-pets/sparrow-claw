@@ -1,18 +1,20 @@
+import dispatchCustomEvent from '../dispatch-custom-event'
+
 const recognizer = {
-  recognize (state, event, option) {
-    if (
-      Math.abs(state.totalX) > option.distance ||
-      Math.abs(state.totalY) > option.distance ||
-      event.touches.length > 1
-    ) {
-      return false
+  recognize (el, status) {
+    const { distance, timespan } = this.options
+    const { totalX, totalY, totalTime, state } = status.changedTouches[0]
+    let result
+    if ((timespan > 0 && totalTime > timespan) || Math.abs(totalX) > distance || Math.abs(totalY) > distance) {
+      result = false
+    } else if (state === 'end') {
+      dispatchCustomEvent(el, 'tap', status)
+      result = true
     }
-    if (state.stage === 'end' && (option.timespan === 0 || state.totalTime < option.timespan)) {
-      this.emit('tap', 'tap', event)
-    }
+    return result
   },
   options: {
-    timespan: 0,
+    timespan: 300,
     distance: 10
   }
 }

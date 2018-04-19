@@ -1,100 +1,117 @@
 (function (global, factory) {
-	typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
-	typeof define === 'function' && define.amd ? define(factory) :
-	(global.SparrowClaw = factory());
-}(this, (function () { 'use strict';
+	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
+	typeof define === 'function' && define.amd ? define(['exports'], factory) :
+	(factory((global.SparrowClaw = {})));
+}(this, (function (exports) { 'use strict';
+
+var EventTypes = {
+  'tap': 'tap',
+  'press': 'press',
+  'panstart': 'pan',
+  'panmove': 'pan',
+  'panend': 'pan',
+  'panxstart': 'panx',
+  'panxmove': 'panx',
+  'panxend': 'panx',
+  'panystart': 'pany',
+  'panymove': 'pany',
+  'panyend': 'pany',
+  'pinchstart': 'pinch',
+  'pinchmove': 'pinch',
+  'pinchend': 'pinch'
+};
+
+function dispatchCustomEvent(el, type, status, options) {
+  var _ref = options || {},
+      canBubble = _ref.canBubble,
+      cancelable = _ref.cancelable,
+      detail = _ref.detail,
+      originalEvent = _ref.originalEvent;
+
+  var event = document.createEvent('CustomEvent');
+  event.initCustomEvent(type, canBubble === undefined ? false : canBubble, cancelable === undefined ? true : cancelable, detail);
+  event.gestureStatus = status;
+  event.originalEvent = originalEvent;
+  if (el.dispatchEvent(event) === false && originalEvent) {
+    originalEvent.preventDefault();
+    originalEvent.stopPropagation();
+  }
+}
 
 var recognizer = {
-  recognize: function recognize(state, event, option) {
-    if (Math.abs(state.totalX) > option.distance || Math.abs(state.totalY) > option.distance || event.touches.length > 1) {
-      return false;
+  recognize: function recognize(el, status) {
+    var _options = this.options,
+        distance = _options.distance,
+        timespan = _options.timespan;
+    var _status$changedTouche = status.changedTouches[0],
+        totalX = _status$changedTouche.totalX,
+        totalY = _status$changedTouche.totalY,
+        totalTime = _status$changedTouche.totalTime,
+        state = _status$changedTouche.state;
+
+    var result = void 0;
+    if (timespan > 0 && totalTime > timespan || Math.abs(totalX) > distance || Math.abs(totalY) > distance) {
+      result = false;
+    } else if (state === 'end') {
+      dispatchCustomEvent(el, 'tap', status);
+      result = true;
     }
-    if (state.stage === 'end' && (option.timespan === 0 || state.totalTime < option.timespan)) {
-      this.emit('tap', 'tap', event);
-    }
+    return result;
   },
 
-  defaultOption: {
-    timespan: 0,
+  options: {
+    timespan: 300,
     distance: 10
   }
 };
 
+function check(el, status, touch, options) {
+  if (status.activeElement) return;
+  var distance = options.distance,
+      timespan = options.timespan;
+  var totalX = touch.totalX,
+      totalY = touch.totalY,
+      totalTime = touch.totalTime,
+      state = touch.state;
+
+  var result = void 0;
+  if (state === 'end' && totalTime < timespan || Math.abs(totalX) > distance || Math.abs(totalY) > distance) {
+    result = false;
+  } else if (totalTime >= timespan) {
+    dispatchCustomEvent(el, 'press', status);
+    result = true;
+  }
+  return result;
+}
+
 var recognizer$1 = {
-  recognize: function recognize(state, event, option) {
-    if (Math.abs(state.totalX) > option.distance || Math.abs(state.totalY) > option.distance || event.touches.length > 1) {
-      return false;
+  recognize: function recognize(el, status) {
+    var _this = this;
+
+    var touch = status.changedTouches[0];
+    var result = check(el, status, touch, this.options);
+    if (result === undefined) {
+      setTimeout(function () {
+        var result = check(el, status, touch, _this.options);
+        if (result) {
+          status.activeElement = el;
+          status.activeGesture = 'press';
+        } else if (result === false && el.$claw.current) {
+          delete el.$claw.current.press;
+        }
+      }, this.options.timer);
     }
-    if ((option.timer || state.stage === 'end') && state.totalTime >= option.timespan) {
-      this.emit('press', 'press', event, true);
-      this.end();
-    }
+    return result;
   },
 
-  defaultOption: {
+  options: {
     timespan: 500,
     distance: 10,
-    timer: 500
+    timer: 600
   }
-};
-
-var GESTURE_DIRECTION = {
-  ALL: 'all',
-  HORIZONTAL: 'x',
-  VERTICAL: 'y'
 };
 
 var recognizer$2 = {
-  recognize: function recognize(state, event, option, panType) {
-    if (!this.gestures[panType || 'pan']) {
-      if (state.stage === 'end' || state.touches.length > 1 || state.first.touches.length > 1) return false;
-      var xUp = Math.abs(state.totalX) > option.distance;
-      var yUp = Math.abs(state.totalY) > option.distance;
-      var dir = option.direction;
-      var result = void 0;
-      if (dir === GESTURE_DIRECTION.HORIZONTAL && yUp || dir === GESTURE_DIRECTION.VERTICAL && xUp) {
-        result = false;
-      } else if (dir !== GESTURE_DIRECTION.HORIZONTAL && yUp || dir !== GESTURE_DIRECTION.VERTICAL && xUp) {
-        result = true;
-        this.emit('pan', 'panstart', event);
-      }
-      return result;
-    } else if (state.stage === 'end') {
-      this.emit('pan', 'panend', event);
-    } else {
-      this.emit('pan', 'panmove', event);
-    }
-  },
-
-  defaultOption: {
-    direction: GESTURE_DIRECTION.ALL,
-    distance: 10
-  }
-};
-
-var xRecognizer = {
-  recognize: function recognize(state, event, option) {
-    return recognizer$2.recognize.call(this, state, event, option, 'panX');
-  },
-
-  defaultOption: {
-    direction: GESTURE_DIRECTION.HORIZONTAL,
-    distance: 10
-  }
-};
-
-var yRecognizer = {
-  recognize: function recognize(state, event, option) {
-    return recognizer$2.recognize.call(this, state, event, option, 'panY');
-  },
-
-  defaultOption: {
-    direction: GESTURE_DIRECTION.VERTICAL,
-    distance: 10
-  }
-};
-
-var recognizer$3 = {
   recognize: function recognize(state, event, option) {
     var len = state.touches.length;
     if (!this.gestures.pinch) {
@@ -135,200 +152,305 @@ var recognizer$3 = {
     }
   },
 
-  defaultOption: {
+  options: {
     distance: 10
   }
 };
 
-var recognizers = {
+var GESTURE_DIRECTION = {
+  ALL: 'all',
+  HORIZONTAL: 'x',
+  VERTICAL: 'y'
+};
+
+var recognizer$3 = {
+  recognize: function recognize(state, event, option, panType) {
+    if (!this.gestures[panType || 'pan']) {
+      if (state.stage === 'end' || state.touches.length > 1 || state.first.touches.length > 1) return false;
+      var xUp = Math.abs(state.totalX) > option.distance;
+      var yUp = Math.abs(state.totalY) > option.distance;
+      var dir = option.direction;
+      var result = void 0;
+      if (dir === GESTURE_DIRECTION.HORIZONTAL && yUp || dir === GESTURE_DIRECTION.VERTICAL && xUp) {
+        result = false;
+      } else if (dir !== GESTURE_DIRECTION.HORIZONTAL && yUp || dir !== GESTURE_DIRECTION.VERTICAL && xUp) {
+        result = true;
+        this.emit('pan', 'panstart', event);
+      }
+      return result;
+    } else if (state.stage === 'end') {
+      this.emit('pan', 'panend', event);
+    } else {
+      this.emit('pan', 'panmove', event);
+    }
+  },
+
+  options: {
+    direction: GESTURE_DIRECTION.ALL,
+    distance: 10
+  }
+};
+
+var xRecognizer = {
+  recognize: function recognize(state, event, option) {
+    return recognizer$3.recognize.call(this, state, event, option, 'panX');
+  },
+
+  options: {
+    direction: GESTURE_DIRECTION.HORIZONTAL,
+    distance: 10
+  }
+};
+
+var yRecognizer = {
+  recognize: function recognize(state, event, option) {
+    return recognizer$3.recognize.call(this, state, event, option, 'panY');
+  },
+
+  options: {
+    direction: GESTURE_DIRECTION.VERTICAL,
+    distance: 10
+  }
+};
+
+var Recognizers = {
   tap: recognizer,
   press: recognizer$1,
-  pan: recognizer$2,
+  pan: recognizer$3,
   panX: xRecognizer,
   panY: yRecognizer,
-  pinch: recognizer$3
+  pinch: recognizer$2
 };
 
-var isArray = Array.isArray || function (v) {
-  return {}.toString.call(v) === '[object Array]';
-};
+var prototype = Element.prototype;
 
-var isFunction = Array.isArray || function (v) {
-  return {}.toString.call(v) === '[object Function]';
-};
-
-function mergeOption(option, defaultOption) {
-  option = option || {};
-  for (var attr in defaultOption) {
-    option[attr] = option[attr] || defaultOption[attr];
-  }
-  return option;
+function hackAddEventListener(fn) {
+  var originalFn = prototype.addEventListener;
+  prototype.addEventListener = function (type, listener, options) {
+    fn.call(this, type, listener);
+    originalFn.call(this, type, listener, options);
+  };
+}
+function hackRemoveEventListener(fn) {
+  var originalFn = prototype.removeEventListener;
+  prototype.removeEventListener = function (type, listener, options) {
+    fn.call(this, type, listener);
+    originalFn.call(this, type, listener, options);
+  };
 }
 
-function dispatchCustomEvent(el, eventName, canBubble, cancelable, detail, originalEvent) {
-  var e = document.createEvent('CustomEvent');
-  e.initCustomEvent(eventName, canBubble, cancelable, detail);
-  e.originalEvent = originalEvent;
-  el.dispatchEvent(e) === false && originalEvent && originalEvent.preventDefault();
-}
+// global gesture status && timer
+var gs = { $touches: {} };
+var timer = void 0;
 
-var activeElement = void 0;
+function calcTouchStatus(_ref, isEnd) {
+  var identifier = _ref.identifier,
+      pageX = _ref.pageX,
+      pageY = _ref.pageY;
 
-function calculateTouchState(state, event) {
-  var first = state.first;
-  var last = state.touches ? state : null;
-  var timestamp = +new Date();
-  var deltaTime = last ? timestamp - last.timestamp : 0;
-  var totalTime = first ? timestamp - first.timestamp : 0;
-  var current = {
+  var status = gs.$touches[identifier] || { identifier: identifier };
+  var timestamp = status.timestamp,
+      startTime = status.startTime,
+      x = status.x,
+      y = status.y,
+      startX = status.startX,
+      startY = status.startY;
+
+  var initial = !timestamp;
+  var now = +new Date();
+  var deltaX = initial ? 0 : pageX - x;
+  var deltaY = initial ? 0 : pageY - y;
+  var totalTime = initial ? 0 : now - startTime;
+  var deltaTime = initial ? 0 : now - timestamp;
+  timestamp = now;
+  startTime = initial ? now : startTime;
+  Object.assign(status, {
     timestamp: timestamp,
     deltaTime: deltaTime,
-    totalTime: totalTime
-  };
-  var len = event && event.touches && state.stage !== 'end' ? Math.min(event.touches.length, 2) : 0;
-  if (len > 0) {
-    var sigmaX = 0;
-    var sigmaY = 0;
-    var touches = [];
-    for (var i = 0; i < len; i++) {
-      var t = event.touches[i];
-      var touch = {
-        x: t.pageX,
-        y: t.pageY
-      };
-      sigmaX += t.pageX;
-      sigmaY += t.pageY;
-      var firstTouch = first ? first.touches[i] : null;
-      var lastTouch = last ? last.touches[i] : null;
-      touch.totalX = firstTouch ? t.pageX - firstTouch.x : 0;
-      touch.totalY = firstTouch ? t.pageY - firstTouch.y : 0;
-      touch.deltaX = lastTouch ? t.pageX - lastTouch.x : 0;
-      touch.deltaY = lastTouch ? t.pageY - lastTouch.y : 0;
-      touch.speedX = touch.deltaX / (deltaTime || 1);
-      touch.speedY = touch.deltaY / (deltaTime || 1);
-      touches.push(touch);
-    }
-    current.centerX = len === 2 ? sigmaX / 2 : last ? last.centerX : undefined;
-    current.centerY = len === 2 ? sigmaY / 2 : last ? last.centerY : undefined;
-    current.touches = touches;
-    for (var prop in touches[0]) {
-      current[prop] = touches[0][prop];
-    }
-  }
-  for (var _prop in current) {
-    state[_prop] = current[_prop];
-  }
-  if (!state.first) state.first = current;
+    totalTime: totalTime,
+    state: isEnd ? 'end' : initial ? 'start' : 'hold'
+  }, isEnd ? {} : {
+    startTime: startTime,
+    x: pageX,
+    y: pageY,
+    deltaX: deltaX,
+    deltaY: deltaY,
+    startX: initial ? pageX : startX,
+    startY: initial ? pageY : startY,
+    totalX: initial ? 0 : pageX - startX,
+    totalY: initial ? 0 : pageY - startY,
+    speedX: deltaX / (deltaTime || 1),
+    speedY: deltaY / (deltaTime || 1)
+  });
+  if (initial) gs.$touches[identifier] = status;
+  return status;
 }
 
-function Claw(el, options) {
-  var _arguments = arguments;
+function updateHoldStatus() {
+  if (gs.activeElement) return;
+  for (var key in gs.$touches) {
+    var touch = gs.$touches[key];
+    var timestamp = touch.timestamp,
+        startTime = touch.startTime,
+        state = touch.state;
 
-  var handlers = {};
-  var gestureOptions = {};
-  var timer = void 0;
-  var context = {
-    el: el,
-    emit: function emit(gestureType, eventName, originalEvent, end) {
-      var handler = handlers[eventName] || handlers[gestureType] || handlers.default;
-      if (handler && handler(el, eventName, this.state, originalEvent) === false) return;
-      dispatchCustomEvent(el, eventName, false, true, this.state, originalEvent);
-      end && this.end();
-    },
-    end: function end() {
-      if (timer) clearTimeout(timer);
-      this.state = null;
-    }
-  };(isArray(options) ? options : [options]).forEach(function (v) {
-    if (!v) return;
-    var gesture = typeof v === 'string' ? { type: v } : isArray(v) ? { type: v[0], option: v[1] } : v;
-    var recognizer = gesture.type ? recognizers[gesture.type] : null;
-    recognizer && (gestureOptions[gesture.type] = gesture.option ? mergeOption(gesture.option, recognizer.defaultOption) : recognizer.defaultOption);
-  });
-
-  function setTimer(interval) {
-    timer = setTimeout(function () {
-      processGesture(el, 'hold');
-    }, interval);
+    if (state === 'end') continue;
+    var now = +new Date();
+    Object.assign(touch, {
+      timestamp: now,
+      totalTime: now - startTime,
+      deltaTime: now - timestamp,
+      deltaX: 0,
+      deltaY: 0,
+      speedX: 0,
+      speedY: 0,
+      state: 'hold'
+    });
   }
-
-  function processGesture(el, stage, event) {
-    if (timer) clearTimeout(timer);
-    if (!context.state || gestureOptions.length < 1) return;
-    context.state.stage = stage;
-    calculateTouchState(context.state, event);
-    if (stage === 'start') return;
-    var activeGesture = context.activeGesture;
-    var survival = false;
-    var interval = void 0;
-    if (activeGesture) {
-      interval = activeGesture.option.timer;
-      survival = !interval && stage === 'hold' ? true : activeGesture.recognize.call(context, context.state, event, activeGesture.option) !== false;
-    } else {
-      for (var gestureType in gestureOptions) {
-        if (context.gestures[gestureType] === false) continue;
-        var recognize = recognizers[gestureType].recognize;
-        var option = gestureOptions[gestureType];
-        var result = !option.timer && stage === 'hold' ? null : recognize.call(context, context.state, event, option);
-        if (result === false) {
-          context.gestures[gestureType] = false;
-        } else {
-          if (result === true) {
-            context.gestures[gestureType] = true;
-            activeElement = el;
-            context.activeGesture = {
-              recognize: recognize,
-              option: option
-            };
-          }
-          option.timer && (!interval || option.timer < interval) && (interval = 100);
-          survival = true;
-        }
-      }
-    }
-    survival ? stage !== 'end' && interval && setTimer(interval) : context.end();
-  }
-
-  el.addEventListener('touchstart', function (event) {
-    context.state = { stage: 'start' };
-    context.activeGesture = null;
-    context.gestures = {};
-    processGesture(el, 'start', event);
-  });
-
-  el.addEventListener('touchmove', function (event) {
-    if (!context.state) return;
-    if (activeElement && activeElement !== el) {
-      context.end();
-      return;
-    }
-    processGesture(el, 'move', event);
-  });
-
-  el.addEventListener('touchend', function (event) {
-    if (context.state) {
-      processGesture(el, 'end', event);
-      activeElement = null;
-    }
-    context.end();
-  });
-
-  this.on = function (eventName, hanlder) {
-    if (isFunction(_arguments[0])) {
-      handlers.default = _arguments[0];
-    } else {
-      handlers[eventName] = hanlder;
-    }
-  };
+  timer = setTimeout(updateHoldStatus, 100);
 }
 
-Claw.recognizers = recognizers;
+function setGestureStatus(event) {
+  var $clawed = event.$clawed,
+      touches = event.touches,
+      targetTouches = event.targetTouches,
+      changedTouches = event.changedTouches;
 
-new Claw(document, 'tap').on('tap', function (el, eventName, state, originalEvent) {
-  dispatchCustomEvent(originalEvent.target, 'tap', true, true, state, originalEvent);
-  return false;
+  if ($clawed) return;
+
+  timer && clearTimeout(timer);
+  event.$clawed = true;
+
+  gs.touches = [];
+  gs.targetTouches = [];
+  gs.changedTouches = [];
+
+  var processed = {};
+  for (var i = 0, len = touches.length; i < len; i++) {
+    var status = calcTouchStatus(touches[i]);
+    gs.touches.push(status);
+    processed[status.identifier] = status;
+  }
+  for (var _i = 0, _len = changedTouches.length; _i < _len; _i++) {
+    var touch = changedTouches[_i];
+    var _status = processed[touch.identifier] || calcTouchStatus(touch, true);
+    gs.changedTouches.push(_status);
+    processed[touch.identifier] = _status;
+  }
+  for (var _i2 = 0, _len2 = targetTouches.length; _i2 < _len2; _i2++) {
+    gs.targetTouches.push(processed[targetTouches[_i2].identifier]);
+  }
+  if (!touches.length) {
+    gs.over = true;
+  } else {
+    timer = setTimeout(updateHoldStatus, 100);
+  }
+}
+
+function recognize(el) {
+  var rs = el.$claw.current;
+  for (var key in rs) {
+    if (gs.activeGesture && gs.activeGesture !== key) continue;
+    var result = rs[key].recognize(el, gs);
+    if (result === false) {
+      delete rs[key];
+    } else if (result === true) {
+      clearTimeout(timer);
+      gs.activeElement = el;
+      gs.activeGesture = key;
+      break;
+    }
+  }
+}
+
+function initClawContext(claw, event) {
+  claw.current = {};
+  for (var key in claw.recognizers) {
+    claw.current[key] = claw.recognizers[key];
+  }
+}
+
+function touchStart(event) {
+  if (gs.over) {
+    gs.$touches = {};
+    delete gs.over;
+    delete gs.activeElement;
+    delete gs.activeGesture;
+  }
+  if (gs.activeElement && gs.activeElement !== this) return;
+  setGestureStatus(event);
+  if (!this.$claw.current) initClawContext(this.$claw);
+  recognize(this);
+}
+
+function touchMove(event) {
+  if (gs.activeElement && gs.activeElement !== this) return;
+  setGestureStatus(event);
+  recognize(this);
+}
+
+function touchEnd(event) {
+  if (gs.activeElement && gs.activeElement !== this) return;
+  setGestureStatus(event);
+  recognize(this);
+  if (gs.over) delete this.$claw.current;
+}
+
+function bindTouchEvents(el) {
+  el.addEventListener('touchstart', touchStart);
+  el.addEventListener('touchmove', touchMove);
+  el.addEventListener('touchend', touchEnd);
+}
+
+function unbindTouchEvents(el) {
+  el.removeEventListener('touchstart', touchStart);
+  el.removeEventListener('touchmove', touchMove);
+  el.removeEventListener('touchend', touchEnd);
+}
+
+function register(el) {
+  var claw = el.$claw = {
+    listeners: {},
+    recognizers: {}
+  };
+  bindTouchEvents(el);
+  return claw;
+}
+function unregister(el) {
+  unbindTouchEvents(el);
+  delete el.$claw;
+}
+
+hackAddEventListener(function (type, fn) {
+  var gesture = EventTypes[type];
+  if (!gesture) return;
+
+  var _ref = this.$claw || register(this),
+      listeners = _ref.listeners,
+      recognizers = _ref.recognizers;
+
+  if (!listeners[type]) {
+    listeners[type] = [];
+    if (!recognizers[gesture]) recognizers[gesture] = Recognizers[gesture];
+  }
+  listeners[type].push(fn);
 });
 
-return Claw;
+hackRemoveEventListener(function (type, fn) {
+  if (!EventTypes[type] || !this.$claw) return;
+  var listeners = this.$claw.listeners;
+
+  var tl = listeners[type];
+  var idx = tl ? tl.indexOf(fn) : -1;
+  if (idx >= 0) {
+    tl.splice(idx, 0);
+    if (tl.length < 1) delete listeners[type];
+    if (Object.keys(listeners).length < 1) unregister(this);
+  }
+});
+
+exports.Recognizers = Recognizers;
+
+Object.defineProperty(exports, '__esModule', { value: true });
 
 })));
