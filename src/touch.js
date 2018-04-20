@@ -1,3 +1,5 @@
+import { assign } from './utils'
+
 const touchable = !!document.createTouch
 
 // global gesture status && timer
@@ -15,7 +17,7 @@ function calcTouchStatus ({ identifier, pageX, pageY }, isEnd) {
   const deltaTime = initial ? 0 : now - timestamp
   timestamp = now
   startTime = initial ? now : startTime
-  Object.assign(
+  assign(
     status,
     {
       timestamp,
@@ -50,7 +52,7 @@ function updateHoldStatus () {
     const { timestamp, startTime, state } = touch
     if (state === 'end') continue
     const now = +new Date()
-    Object.assign(touch, {
+    assign(touch, {
       timestamp: now,
       totalTime: now - startTime,
       deltaTime: now - timestamp,
@@ -153,7 +155,6 @@ function touchEnd (event) {
   recognize(this, event)
   if (gs.over) delete this.$claw.current
 }
-
 
 const touchstart = touchable ? 'touchstart' : 'mousedown'
 const touchmove = touchable ? 'touchmove' : 'mousemove'

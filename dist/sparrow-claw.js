@@ -185,6 +185,18 @@ function hackRemoveEventListener(fn) {
   };
 }
 
+var assign = Object.assign || function (target) {
+  for (var i = 1; i < arguments.length; i++) {
+    var source = arguments[i];
+    for (var key in source) {
+      if (Object.prototype.hasOwnProperty.call(source, key)) {
+        target[key] = source[key];
+      }
+    }
+  }
+  return target;
+};
+
 var touchable = !!document.createTouch;
 
 // global gesture status && timer
@@ -212,7 +224,7 @@ function calcTouchStatus(_ref, isEnd) {
   var deltaTime = initial ? 0 : now - timestamp;
   timestamp = now;
   startTime = initial ? now : startTime;
-  Object.assign(status, {
+  assign(status, {
     timestamp: timestamp,
     deltaTime: deltaTime,
     totalTime: totalTime,
@@ -244,7 +256,7 @@ function updateHoldStatus() {
 
     if (state === 'end') continue;
     var now = +new Date();
-    Object.assign(touch, {
+    assign(touch, {
       timestamp: now,
       totalTime: now - startTime,
       deltaTime: now - timestamp,

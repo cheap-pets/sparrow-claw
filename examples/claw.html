@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <script type="text/javascript" src="../dist/sparrow-claw.js?x=3"></script>
+  <script type="text/javascript" src="../dist/sparrow-claw.js?x=7"></script>
   <title>pan</title>
   <style>
 
@@ -24,20 +24,14 @@
 </head>
 
 <body>
-  <div id="app">
+  <div id="app">12356
   </div>
 
   <script type="text/javascript">
-  document.documentElement.addEventListener('touchstart', function(event) {
-    event.preventDefault()
-  })
-  document.documentElement.addEventListener('touchmove', function(event) {
-    event.preventDefault()
-  })
-  document.documentElement.addEventListener('touchend', function(event) {
-    event.preventDefault()
-  })
-    const div = document.querySelector('#app')
+    var div = document.querySelector('#app')
+    window.onerror = function (msg) {
+      this.innerHTML = msg
+    }
     div.addEventListener('tap', function (event) {
       this.innerHTML = 'tap'
     })
@@ -48,8 +42,8 @@
       this.innerHTML = 'panstart'
     })
     div.addEventListener('panmove', function (event) {
-      const { x, y } = event.gestureStatus.changedTouches[0]
-      this.innerHTML = 'panmove: ' + x + ', ' + y
+      const touch = event.gestureStatus.changedTouches[0]
+      this.innerHTML = 'panmove: ' + touch.x + ', ' + touch.y
     })
     div.addEventListener('panend', function (event) {
       this.innerHTML = 'panend'
