@@ -95,14 +95,14 @@ function setGestureStatus (event) {
   }
 }
 
-function recognize (el) {
+function recognize (el, event) {
   const rs = el.$claw.current
   for (let key in rs) {
     if (gs.activeGesture && gs.activeGesture !== key) continue
-    const result = rs[key].recognize(el, gs)
-    if (result === false) {
+    const recognized = rs[key].recognize(el, gs)
+    if (recognized === false) {
       delete rs[key]
-    } else if (result === true) {
+    } else if (recognized === true) {
       clearTimeout(timer)
       gs.activeElement = el
       gs.activeGesture = key
@@ -128,19 +128,19 @@ function touchStart (event) {
   if (gs.activeElement && gs.activeElement !== this) return
   setGestureStatus(event)
   if (!this.$claw.current) initClawContext(this.$claw)
-  recognize(this)
+  recognize(this, event)
 }
 
 function touchMove (event) {
   if (gs.activeElement && gs.activeElement !== this) return
   setGestureStatus(event)
-  recognize(this)
+  recognize(this, event)
 }
 
 function touchEnd (event) {
   if (gs.activeElement && gs.activeElement !== this) return
   setGestureStatus(event)
-  recognize(this)
+  recognize(this, event)
   if (gs.over) delete this.$claw.current
 }
 

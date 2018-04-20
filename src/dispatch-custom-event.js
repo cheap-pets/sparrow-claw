@@ -8,7 +8,7 @@ export default function dispatchCustomEvent (el, type, status, options) {
     detail
   )
   event.gestureStatus = status
-  event.originalEvent = originalEvent
+  if (originalEvent) event.originalEvent = originalEvent
   if (el.dispatchEvent(event) === false && originalEvent) {
     originalEvent.preventDefault()
     originalEvent.stopPropagation()

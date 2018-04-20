@@ -1,50 +1,46 @@
+import dispatchCustomEvent from '../dispatch-custom-event'
 import { GESTURE_DIRECTION } from '../constant'
 
-const recognizer = {
-  recognize (state, event, option, panType) {
-    if (!this.gestures[panType || 'pan']) {
-      if (state.stage === 'end' || state.touches.length > 1 || state.first.touches.length > 1) return false
-      const xUp = Math.abs(state.totalX) > option.distance
-      const yUp = Math.abs(state.totalY) > option.distance
-      const dir = option.direction
-      let result
-      if ((dir === GESTURE_DIRECTION.HORIZONTAL && yUp) || (dir === GESTURE_DIRECTION.VERTICAL && xUp)) {
-        result = false
-      } else if ((dir !== GESTURE_DIRECTION.HORIZONTAL && yUp) || (dir !== GESTURE_DIRECTION.VERTICAL && xUp)) {
-        result = true
-        this.emit('pan', 'panstart', event)
+const pan = {
+  recognize (el, status, direction) {
+    const eventName = 'pan' + (direction || '')
+    const { activeGesture } = status
+    const { distance } = this.options
+    const { totalX, totalY, state } = status.changedTouches[0]
+    const x = Math.abs(totalX)
+    const y = Math.abs(totalY)
+    if (!activeGesture) {
+      if (
+        (direction === GESTURE_DIRECTION.HORIZONTAL && y > distance) ||
+        (direction === GESTURE_DIRECTION.VERTICAL && x > distance)
+      ) {
+        return false
+      } else if (x > distance || y > distance) {
+        dispatchCustomEvent(el, eventName + 'start', status)
+        return true
       }
-      return result
-    } else if (state.stage === 'end') {
-      this.emit('pan', 'panend', event)
+    } else if (state === 'end') {
+      dispatchCustomEvent(el, eventName + 'end', status)
+      return false
     } else {
-      this.emit('pan', 'panmove', event)
+      dispatchCustomEvent(el, eventName + 'move', status)
     }
   },
   options: {
-    direction: GESTURE_DIRECTION.ALL,
     distance: 10
   }
 }
 
-const xRecognizer = {
-  recognize (state, event, option) {
-    return recognizer.recognize.call(this, state, event, option, 'panX')
-  },
-  options: {
-    direction: GESTURE_DIRECTION.HORIZONTAL,
-    distance: 10
+const panx = {
+  recognize (el, status) {
+    return pan.recognize(el, status, GESTURE_DIRECTION.HORIZONTAL)
   }
 }
 
-const yRecognizer = {
-  recognize (state, event, option) {
-    return recognizer.recognize.call(this, state, event, option, 'panY')
-  },
-  options: {
-    direction: GESTURE_DIRECTION.VERTICAL,
-    distance: 10
+const pany = {
+  recognize (el, status) {
+    return pan.recognize(el, status, GESTURE_DIRECTION.VERTICAL)
   }
 }
 
-export { recognizer as pan, xRecognizer as panX, yRecognizer as panY }
+export { pan, panx, pany }

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <script type="text/javascript" src="../dist/sparrow-claw.js?x=3"></script>
+  <title>pan</title>
+  <style>
+
+    #app {
+      position: fixed;
+      top: 50px;
+      left: 50px;
+      bottom: 50px;
+      right: 50px;
+      background-color: brown;
+      color: #fff;
+      line-height: 100px;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="app">
+  </div>
+
+  <script type="text/javascript">
+  document.documentElement.addEventListener('touchstart', function(event) {
+    event.preventDefault()
+  })
+  document.documentElement.addEventListener('touchmove', function(event) {
+    event.preventDefault()
+  })
+  document.documentElement.addEventListener('touchend', function(event) {
+    event.preventDefault()
+  })
+    const div = document.querySelector('#app')
+    div.addEventListener('tap', function (event) {
+      this.innerHTML = 'tap'
+    })
+    div.addEventListener('press', function (event) {
+      this.innerHTML = 'press'
+    })
+    div.addEventListener('panstart', function (event) {
+      this.innerHTML = 'panstart'
+    })
+    div.addEventListener('panmove', function (event) {
+      const { x, y } = event.gestureStatus.changedTouches[0]
+      this.innerHTML = 'panmove: ' + x + ', ' + y
+    })
+    div.addEventListener('panend', function (event) {
+      this.innerHTML = 'panend'
+    })
+  </script>
+</body>

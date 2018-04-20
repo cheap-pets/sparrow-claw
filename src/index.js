@@ -1,5 +1,5 @@
 import EventTypes from './gesture-event-types'
-import Recognizers from './recognizers'
+import * as Recognizers from './recognizers'
 import { hackAddEventListener, hackRemoveEventListener } from './hack-element-event'
 import { bindTouchEvents, unbindTouchEvents } from './touch'
 

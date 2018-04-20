@@ -31,14 +31,14 @@ function dispatchCustomEvent(el, type, status, options) {
   var event = document.createEvent('CustomEvent');
   event.initCustomEvent(type, canBubble === undefined ? false : canBubble, cancelable === undefined ? true : cancelable, detail);
   event.gestureStatus = status;
-  event.originalEvent = originalEvent;
+  if (originalEvent) event.originalEvent = originalEvent;
   if (el.dispatchEvent(event) === false && originalEvent) {
     originalEvent.preventDefault();
     originalEvent.stopPropagation();
   }
 }
 
-var recognizer = {
+var tap = {
   recognize: function recognize(el, status) {
     var _options = this.options,
         distance = _options.distance,
@@ -49,18 +49,16 @@ var recognizer = {
         totalTime = _status$changedTouche.totalTime,
         state = _status$changedTouche.state;
 
-    var result = void 0;
     if (timespan > 0 && totalTime > timespan || Math.abs(totalX) > distance || Math.abs(totalY) > distance) {
-      result = false;
+      return false;
     } else if (state === 'end') {
       dispatchCustomEvent(el, 'tap', status);
-      result = true;
+      return true;
     }
-    return result;
   },
 
   options: {
-    timespan: 300,
+    timespan: 0,
     distance: 10
   }
 };
@@ -71,89 +69,42 @@ function check(el, status, touch, options) {
       timespan = options.timespan;
   var totalX = touch.totalX,
       totalY = touch.totalY,
-      totalTime = touch.totalTime,
+      startTime = touch.startTime,
       state = touch.state;
 
-  var result = void 0;
+  var totalTime = +new Date() - startTime;
   if (state === 'end' && totalTime < timespan || Math.abs(totalX) > distance || Math.abs(totalY) > distance) {
-    result = false;
+    return false;
   } else if (totalTime >= timespan) {
     dispatchCustomEvent(el, 'press', status);
-    result = true;
+    return true;
   }
-  return result;
 }
 
-var recognizer$1 = {
+var press = {
   recognize: function recognize(el, status) {
     var _this = this;
 
     var touch = status.changedTouches[0];
-    var result = check(el, status, touch, this.options);
-    if (result === undefined) {
+    var recognized = check(el, status, touch, this.options);
+    if (recognized === undefined) {
       setTimeout(function () {
-        var result = check(el, status, touch, _this.options);
-        if (result) {
+        var recognized = check(el, status, touch, _this.options);
+        if (recognized) {
           status.activeElement = el;
           status.activeGesture = 'press';
-        } else if (result === false && el.$claw.current) {
+        } else if (recognized === false && el.$claw.current) {
           delete el.$claw.current.press;
         }
       }, this.options.timer);
     }
-    return result;
+    return recognized;
   },
 
   options: {
-    timespan: 500,
+    timespan: 1000,
     distance: 10,
-    timer: 600
-  }
-};
-
-var recognizer$2 = {
-  recognize: function recognize(state, event, option) {
-    var len = state.touches.length;
-    if (!this.gestures.pinch) {
-      if (state.stage === 'end' || state.touches.length !== 2) return false;
-      var xUp = void 0;
-      var yUp = void 0;
-      for (var i = 0; i < len; i++) {
-        var touch = state.touches[i];
-        xUp = Math.abs(touch.totalX) > option.distance;
-        yUp = Math.abs(touch.totalY) > option.distance;
-        if (xUp || yUp) break;
-      }
-      if (xUp || yUp) {
-        if (len === 2) {
-          this.emit('pinch', 'pinchstart', event);
-          return true;
-        } else {
-          return false;
-        }
-      }
-    } else if (state.stage === 'end') {
-      this.emit('pinch', 'pinchend', event);
-    } else {
-      if (len > 1) {
-        var t0 = state.touches[0];
-        var t1 = state.touches[1];
-        var x = t0.x - t1.x;
-        var y = t0.y - t1.y;
-        var distance = Math.sqrt(x * x + y * y);
-        if (!state.pinchInitDistance) {
-          state.pinchInitDistance = distance;
-          state.pinchRatio = 1;
-        } else {
-          state.pinchRatio = distance / state.pinchInitDistance;
-        }
-      }
-      this.emit('pinch', 'pinchmove', event);
-    }
-  },
-
-  options: {
-    distance: 10
+    timer: 1000
   }
 };
 
@@ -163,64 +114,59 @@ var GESTURE_DIRECTION = {
   VERTICAL: 'y'
 };
 
-var recognizer$3 = {
-  recognize: function recognize(state, event, option, panType) {
-    if (!this.gestures[panType || 'pan']) {
-      if (state.stage === 'end' || state.touches.length > 1 || state.first.touches.length > 1) return false;
-      var xUp = Math.abs(state.totalX) > option.distance;
-      var yUp = Math.abs(state.totalY) > option.distance;
-      var dir = option.direction;
-      var result = void 0;
-      if (dir === GESTURE_DIRECTION.HORIZONTAL && yUp || dir === GESTURE_DIRECTION.VERTICAL && xUp) {
-        result = false;
-      } else if (dir !== GESTURE_DIRECTION.HORIZONTAL && yUp || dir !== GESTURE_DIRECTION.VERTICAL && xUp) {
-        result = true;
-        this.emit('pan', 'panstart', event);
+var pan = {
+  recognize: function recognize(el, status, direction) {
+    var eventName = 'pan' + (direction || '');
+    var activeGesture = status.activeGesture;
+    var distance = this.options.distance;
+    var _status$changedTouche = status.changedTouches[0],
+        totalX = _status$changedTouche.totalX,
+        totalY = _status$changedTouche.totalY,
+        state = _status$changedTouche.state;
+
+    var x = Math.abs(totalX);
+    var y = Math.abs(totalY);
+    if (!activeGesture) {
+      if (direction === GESTURE_DIRECTION.HORIZONTAL && y > distance || direction === GESTURE_DIRECTION.VERTICAL && x > distance) {
+        return false;
+      } else if (x > distance || y > distance) {
+        dispatchCustomEvent(el, eventName + 'start', status);
+        return true;
       }
-      return result;
-    } else if (state.stage === 'end') {
-      this.emit('pan', 'panend', event);
+    } else if (state === 'end') {
+      dispatchCustomEvent(el, eventName + 'end', status);
+      return false;
     } else {
-      this.emit('pan', 'panmove', event);
+      dispatchCustomEvent(el, eventName + 'move', status);
     }
   },
 
   options: {
-    direction: GESTURE_DIRECTION.ALL,
     distance: 10
   }
 };
 
-var xRecognizer = {
-  recognize: function recognize(state, event, option) {
-    return recognizer$3.recognize.call(this, state, event, option, 'panX');
-  },
-
-  options: {
-    direction: GESTURE_DIRECTION.HORIZONTAL,
-    distance: 10
+var panx = {
+  recognize: function recognize(el, status) {
+    return pan.recognize(el, status, GESTURE_DIRECTION.HORIZONTAL);
   }
 };
 
-var yRecognizer = {
-  recognize: function recognize(state, event, option) {
-    return recognizer$3.recognize.call(this, state, event, option, 'panY');
-  },
-
-  options: {
-    direction: GESTURE_DIRECTION.VERTICAL,
-    distance: 10
+var pany = {
+  recognize: function recognize(el, status) {
+    return pan.recognize(el, status, GESTURE_DIRECTION.VERTICAL);
   }
 };
 
-var Recognizers = {
-  tap: recognizer,
-  press: recognizer$1,
-  pan: recognizer$3,
-  panX: xRecognizer,
-  panY: yRecognizer,
-  pinch: recognizer$2
-};
+
+
+var Recognizers = Object.freeze({
+	tap: tap,
+	press: press,
+	pan: pan,
+	panx: panx,
+	pany: pany
+});
 
 var prototype = Element.prototype;
 
@@ -347,14 +293,14 @@ function setGestureStatus(event) {
   }
 }
 
-function recognize(el) {
+function recognize(el, event) {
   var rs = el.$claw.current;
   for (var key in rs) {
     if (gs.activeGesture && gs.activeGesture !== key) continue;
-    var result = rs[key].recognize(el, gs);
-    if (result === false) {
+    var recognized = rs[key].recognize(el, gs);
+    if (recognized === false) {
       delete rs[key];
-    } else if (result === true) {
+    } else if (recognized === true) {
       clearTimeout(timer);
       gs.activeElement = el;
       gs.activeGesture = key;
@@ -380,19 +326,19 @@ function touchStart(event) {
   if (gs.activeElement && gs.activeElement !== this) return;
   setGestureStatus(event);
   if (!this.$claw.current) initClawContext(this.$claw);
-  recognize(this);
+  recognize(this, event);
 }
 
 function touchMove(event) {
   if (gs.activeElement && gs.activeElement !== this) return;
   setGestureStatus(event);
-  recognize(this);
+  recognize(this, event);
 }
 
 function touchEnd(event) {
   if (gs.activeElement && gs.activeElement !== this) return;
   setGestureStatus(event);
-  recognize(this);
+  recognize(this, event);
   if (gs.over) delete this.$claw.current;
 }
 
