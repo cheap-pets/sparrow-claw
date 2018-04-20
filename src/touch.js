@@ -1,3 +1,5 @@
+const touchable = !!document.createTouch
+
 // global gesture status && timer
 const gs = { $touches: {} }
 let timer
@@ -63,7 +65,7 @@ function updateHoldStatus () {
 }
 
 function setGestureStatus (event) {
-  const { $clawed, touches, targetTouches, changedTouches } = event
+  const { $clawed, touches, targetTouches, changedTouches, type, pageX, pageY } = event
   if ($clawed) return
 
   timer && clearTimeout(timer)
@@ -73,22 +75,30 @@ function setGestureStatus (event) {
   gs.targetTouches = []
   gs.changedTouches = []
 
-  const processed = {}
-  for (let i = 0, len = touches.length; i < len; i++) {
-    const status = calcTouchStatus(touches[i])
-    gs.touches.push(status)
-    processed[status.identifier] = status
-  }
-  for (let i = 0, len = changedTouches.length; i < len; i++) {
-    const touch = changedTouches[i]
-    const status = processed[touch.identifier] || calcTouchStatus(touch, true)
+  if (touchable) {
+    const processed = {}
+    for (let i = 0, len = touches.length; i < len; i++) {
+      const status = calcTouchStatus(touches[i])
+      gs.touches.push(status)
+      processed[status.identifier] = status
+    }
+    for (let i = 0, len = changedTouches.length; i < len; i++) {
+      const touch = changedTouches[i]
+      const status = processed[touch.identifier] || calcTouchStatus(touch, true)
+      gs.changedTouches.push(status)
+      processed[touch.identifier] = status
+    }
+    for (let i = 0, len = targetTouches.length; i < len; i++) {
+      gs.targetTouches.push(processed[targetTouches[i].identifier])
+    }
+  } else {
+    if (type !== 'mousedown' && !Object.keys(gs.$touches).length) return
+    const status = calcTouchStatus({ identifier: 0, pageX, pageY }, type === 'mouseup')
+    if (type !== 'mouseup') gs.touches.push(status)
     gs.changedTouches.push(status)
-    processed[touch.identifier] = status
+    gs.targetTouches.push(status)
   }
-  for (let i = 0, len = targetTouches.length; i < len; i++) {
-    gs.targetTouches.push(processed[targetTouches[i].identifier])
-  }
-  if (!touches.length) {
+  if ((type === 'mouseup') || (touches && !touches.length)) {
     gs.over = true
   } else {
     timer = setTimeout(updateHoldStatus, 100)
@@ -144,14 +154,19 @@ function touchEnd (event) {
   if (gs.over) delete this.$claw.current
 }
 
+
+const touchstart = touchable ? 'touchstart' : 'mousedown'
+const touchmove = touchable ? 'touchmove' : 'mousemove'
+const touchend = touchable ? 'touchend' : 'mouseup'
+
 export function bindTouchEvents (el) {
-  el.addEventListener('touchstart', touchStart)
-  el.addEventListener('touchmove', touchMove)
-  el.addEventListener('touchend', touchEnd)
+  el.addEventListener(touchstart, touchStart)
+  el.addEventListener(touchmove, touchMove)
+  el.addEventListener(touchend, touchEnd)
 }
 
 export function unbindTouchEvents (el) {
-  el.removeEventListener('touchstart', touchStart)
-  el.removeEventListener('touchmove', touchMove)
-  el.removeEventListener('touchend', touchEnd)
+  el.removeEventListener(touchstart, touchStart)
+  el.removeEventListener(touchmove, touchMove)
+  el.removeEventListener(touchend, touchEnd)
 }

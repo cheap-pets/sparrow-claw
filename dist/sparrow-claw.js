@@ -185,6 +185,8 @@ function hackRemoveEventListener(fn) {
   };
 }
 
+var touchable = !!document.createTouch;
+
 // global gesture status && timer
 var gs = { $touches: {} };
 var timer = void 0;
@@ -260,7 +262,10 @@ function setGestureStatus(event) {
   var $clawed = event.$clawed,
       touches = event.touches,
       targetTouches = event.targetTouches,
-      changedTouches = event.changedTouches;
+      changedTouches = event.changedTouches,
+      type = event.type,
+      pageX = event.pageX,
+      pageY = event.pageY;
 
   if ($clawed) return;
 
@@ -271,22 +276,30 @@ function setGestureStatus(event) {
   gs.targetTouches = [];
   gs.changedTouches = [];
 
-  var processed = {};
-  for (var i = 0, len = touches.length; i < len; i++) {
-    var status = calcTouchStatus(touches[i]);
-    gs.touches.push(status);
-    processed[status.identifier] = status;
+  if (touchable) {
+    var processed = {};
+    for (var i = 0, len = touches.length; i < len; i++) {
+      var status = calcTouchStatus(touches[i]);
+      gs.touches.push(status);
+      processed[status.identifier] = status;
+    }
+    for (var _i = 0, _len = changedTouches.length; _i < _len; _i++) {
+      var touch = changedTouches[_i];
+      var _status = processed[touch.identifier] || calcTouchStatus(touch, true);
+      gs.changedTouches.push(_status);
+      processed[touch.identifier] = _status;
+    }
+    for (var _i2 = 0, _len2 = targetTouches.length; _i2 < _len2; _i2++) {
+      gs.targetTouches.push(processed[targetTouches[_i2].identifier]);
+    }
+  } else {
+    if (type !== 'mousedown' && !Object.keys(gs.$touches).length) return;
+    var _status2 = calcTouchStatus({ identifier: 0, pageX: pageX, pageY: pageY }, type === 'mouseup');
+    if (type !== 'mouseup') gs.touches.push(_status2);
+    gs.changedTouches.push(_status2);
+    gs.targetTouches.push(_status2);
   }
-  for (var _i = 0, _len = changedTouches.length; _i < _len; _i++) {
-    var touch = changedTouches[_i];
-    var _status = processed[touch.identifier] || calcTouchStatus(touch, true);
-    gs.changedTouches.push(_status);
-    processed[touch.identifier] = _status;
-  }
-  for (var _i2 = 0, _len2 = targetTouches.length; _i2 < _len2; _i2++) {
-    gs.targetTouches.push(processed[targetTouches[_i2].identifier]);
-  }
-  if (!touches.length) {
+  if (type === 'mouseup' || touches && !touches.length) {
     gs.over = true;
   } else {
     timer = setTimeout(updateHoldStatus, 100);
@@ -342,16 +355,20 @@ function touchEnd(event) {
   if (gs.over) delete this.$claw.current;
 }
 
+var touchstart = touchable ? 'touchstart' : 'mousedown';
+var touchmove = touchable ? 'touchmove' : 'mousemove';
+var touchend = touchable ? 'touchend' : 'mouseup';
+
 function bindTouchEvents(el) {
-  el.addEventListener('touchstart', touchStart);
-  el.addEventListener('touchmove', touchMove);
-  el.addEventListener('touchend', touchEnd);
+  el.addEventListener(touchstart, touchStart);
+  el.addEventListener(touchmove, touchMove);
+  el.addEventListener(touchend, touchEnd);
 }
 
 function unbindTouchEvents(el) {
-  el.removeEventListener('touchstart', touchStart);
-  el.removeEventListener('touchmove', touchMove);
-  el.removeEventListener('touchend', touchEnd);
+  el.removeEventListener(touchstart, touchStart);
+  el.removeEventListener(touchmove, touchMove);
+  el.removeEventListener(touchend, touchEnd);
 }
 
 function register(el) {
