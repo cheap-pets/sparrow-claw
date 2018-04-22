@@ -1,4 +1,4 @@
-import dispatchCustomEvent from '../dispatch-custom-event'
+import dispatchCustomEvent from '../../utils/dispatch-custom-event'
 
 export const tap = {
   recognize (el, status) {
@@ -18,5 +18,6 @@ export const tap = {
   options: {
     timespan: 0,
     distance: 10
-  }
+  },
+  eventTypes: ['tap']
 }

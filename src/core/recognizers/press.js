@@ -1,4 +1,4 @@
-import dispatchCustomEvent from '../dispatch-custom-event'
+import dispatchCustomEvent from '../../utils/dispatch-custom-event'
 
 function check (el, status, touch, options) {
   if (status.activeElement) return
@@ -38,5 +38,6 @@ export const press = {
     timespan: 1000,
     distance: 10,
     timer: 1000
-  }
+  },
+  eventTypes: ['press']
 }

@@ -1,4 +1,4 @@
-import dispatchCustomEvent from '../dispatch-custom-event'
+import dispatchCustomEvent from '../../utils/dispatch-custom-event'
 import { GESTURE_DIRECTION } from '../constant'
 
 const pan = {
@@ -28,19 +28,22 @@ const pan = {
   },
   options: {
     distance: 10
-  }
+  },
+  eventTypes: ['panstart', 'panmove', 'panend']
 }
 
 const panx = {
   recognize (el, status) {
     return pan.recognize(el, status, GESTURE_DIRECTION.HORIZONTAL)
-  }
+  },
+  eventTypes: ['panxstart', 'panxmove', 'panxend']
 }
 
 const pany = {
   recognize (el, status) {
     return pan.recognize(el, status, GESTURE_DIRECTION.VERTICAL)
-  }
+  },
+  eventTypes: ['panystart', 'panymove', 'panyend']
 }
 
 export { pan, panx, pany }

@@ -3,18 +3,21 @@
   "extends": [
     "standard"
   ],
+  "plugins": [
+    "html"
+  ],
   "globals": {
-
   },
   "env": {
     "browser": true,
     "es6": true
   },
   "rules": {
+    "no-extend-native": 0,
     "max-len": [
       1,
       {
-        "code": 100,
+        "code": 120,
         "tabWidth": 2,
         "ignoreComments": true,
         "ignoreTrailingComments": true,

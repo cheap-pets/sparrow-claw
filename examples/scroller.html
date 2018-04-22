@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <script type="text/javascript" src="../dist/sparrow-claw.js?x=36"></script>
+  <title>pan</title>
+  <style>
+
+    #app {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      right: 20px;
+      bottom: 20px;
+      padding: 20px;
+      overflow: hidden;
+      background-color: peru;
+    }
+    #app > div {
+      background-color: goldenrod;
+      color: #fff;
+      line-height: 30px;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="app">
+    <div >
+    </div>
+  </div>
+
+  <script type="text/javascript">
+    var div = document.querySelector('#app > div')
+    var s = ''
+    for (var i = 0; i < 500; i++) {
+      s += '<div>' + i + '</div>'
+    }
+    div.innerHTML = s
+    window.SparrowClaw.scroller.attach(div)
+  </script>
+</body>

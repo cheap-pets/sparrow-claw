@@ -4,6 +4,20 @@
 	(factory((global.SparrowClaw = {})));
 }(this, (function (exports) { 'use strict';
 
+if (!Object.assign) {
+  Object.assign = function (target) {
+    for (var i = 1; i < arguments.length; i++) {
+      var source = arguments[i];
+      for (var key in source) {
+        if (Object.prototype.hasOwnProperty.call(source, key)) {
+          target[key] = source[key];
+        }
+      }
+    }
+    return target;
+  };
+}
+
 var EventTypes = {
   'tap': 'tap',
   'press': 'press',
@@ -60,7 +74,8 @@ var tap = {
   options: {
     timespan: 0,
     distance: 10
-  }
+  },
+  eventTypes: ['tap']
 };
 
 function check(el, status, touch, options) {
@@ -105,7 +120,8 @@ var press = {
     timespan: 1000,
     distance: 10,
     timer: 1000
-  }
+  },
+  eventTypes: ['press']
 };
 
 var GESTURE_DIRECTION = {
@@ -143,19 +159,24 @@ var pan = {
 
   options: {
     distance: 10
-  }
+  },
+  eventTypes: ['panstart', 'panmove', 'panend']
 };
 
 var panx = {
   recognize: function recognize(el, status) {
     return pan.recognize(el, status, GESTURE_DIRECTION.HORIZONTAL);
-  }
+  },
+
+  eventTypes: ['panxstart', 'panxmove', 'panxend']
 };
 
 var pany = {
   recognize: function recognize(el, status) {
     return pan.recognize(el, status, GESTURE_DIRECTION.VERTICAL);
-  }
+  },
+
+  eventTypes: ['panystart', 'panymove', 'panyend']
 };
 
 
@@ -185,18 +206,6 @@ function hackRemoveEventListener(fn) {
   };
 }
 
-var assign = Object.assign || function (target) {
-  for (var i = 1; i < arguments.length; i++) {
-    var source = arguments[i];
-    for (var key in source) {
-      if (Object.prototype.hasOwnProperty.call(source, key)) {
-        target[key] = source[key];
-      }
-    }
-  }
-  return target;
-};
-
 var touchable = !!document.createTouch;
 
 // global gesture status && timer
@@ -224,7 +233,7 @@ function calcTouchStatus(_ref, isEnd) {
   var deltaTime = initial ? 0 : now - timestamp;
   timestamp = now;
   startTime = initial ? now : startTime;
-  assign(status, {
+  Object.assign(status, {
     timestamp: timestamp,
     deltaTime: deltaTime,
     totalTime: totalTime,
@@ -256,7 +265,7 @@ function updateHoldStatus() {
 
     if (state === 'end') continue;
     var now = +new Date();
-    assign(touch, {
+    Object.assign(touch, {
       timestamp: now,
       totalTime: now - startTime,
       deltaTime: now - timestamp,
@@ -424,7 +433,84 @@ hackRemoveEventListener(function (type, fn) {
   }
 });
 
+function getClientRect(el) {
+  var _el$parentNode$getBou = el.parentNode.getBoundingClientRect(),
+      top = _el$parentNode$getBou.top,
+      left = _el$parentNode$getBou.left;
+
+  var offsetTop = el.offsetTop,
+      offsetLeft = el.offsetLeft;
+
+  var rect = el.getBoundingClientRect();
+  return {
+    top: rect.top - top - offsetTop,
+    bottom: rect.bottom - top - offsetTop,
+    left: rect.left - left - offsetLeft,
+    right: rect.right - left - offsetLeft
+  };
+}
+
+function getTransformY(_ref) {
+  var style = _ref.style;
+
+  var s = style.transform || style.webkitTransform || '';
+  var t = s.match(/translate3d\(\dpx,([^)]*)/);
+  var v = t ? t[1] : 0;
+  return parseInt(v, 10);
+}
+
+function setTransformY(_ref2, y) {
+  var style = _ref2.style;
+
+  style.transform = 'translate3d(0,' + y + 'px,0)';
+  style.webkitTransform = 'translate3d(0,' + y + 'px,0)';
+}
+
+function setTransitionDuration(_ref3, s) {
+  var style = _ref3.style;
+
+  style.transitionDuration = s + 's';
+  style.webkitTransitionDuration = s + 's';
+}
+
+function setTransitionTimingFunction(_ref4, type) {
+  var style = _ref4.style;
+
+  style.transitionTimingFunction = type;
+  style.webkitTransitionTimingFunction = type;
+}
+
+var scroller = {
+  attach: function attach(el) {
+    setTransitionTimingFunction(el, 'cubic-bezier(0, 0, 0.25, 1)');
+    el.addEventListener('touchstart', function (event) {
+      console.log(getTransformY(el), getClientRect(el).top);
+      setTransformY(el, getClientRect(el).top);
+      setTransitionDuration(el, 0);
+    });
+    el.addEventListener('panymove', function (event) {
+      var deltaY = event.gestureStatus.changedTouches[0].deltaY;
+
+      var transY = getTransformY(el);
+      setTransformY(this, transY + deltaY);
+    });
+    el.addEventListener('panyend', function (event) {
+      var speedY = event.gestureStatus.changedTouches[0].speedY;
+
+      if (speedY < -3) speedY = -3;else if (speedY > 3) speedY = 3;
+      console.log(speedY);
+      var at = speedY > 0 ? 0.0025 : -0.0025;
+      var t = Math.abs(speedY / at);
+      var s = speedY * t - at * t * t / 2;
+      var transY = getTransformY(el);
+      setTransitionDuration(el, t * 2 / 1000);
+      setTransformY(this, transY + s);
+    });
+  }
+};
+
 exports.Recognizers = Recognizers;
+exports.scroller = scroller;
 
 Object.defineProperty(exports, '__esModule', { value: true });
 

@@ -33,6 +33,7 @@
     "babel-plugin-transform-object-rest-spread": "^6.26.0",
     "eventemitter3": "^3.0.1",
     "lodash": "^4.17.5",
-    "sparrow-css": "^0.1.17"
+    "sparrow-css": "^0.1.17",
+    "sparrow-device-query": "^1.0.0"
   }
 }
