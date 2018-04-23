@@ -7,7 +7,8 @@ import {
 } from '../utils/styles'
 
 function minY (el) {
-  return el.parentNode.clientHeight - el.offsetHeight - el.offsetTop
+  const y = el.parentNode.clientHeight - el.offsetHeight - el.offsetTop
+  return y > 0 ? 0 : y
 }
 
 function isOut (el, y) {
@@ -52,5 +53,8 @@ export const scroller = {
       setTransitionDuration(el, t / 1000)
       setTransformY(this, newY)
     })
+  },
+  setTop () {
+
   }
 }
