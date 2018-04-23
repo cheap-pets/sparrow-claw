@@ -1,12 +1,10 @@
-export function getClientRect (el) {
+export function getClientPosition (el) {
   const { top, left } = el.parentNode.getBoundingClientRect()
   const { offsetTop, offsetLeft } = el
   const rect = el.getBoundingClientRect()
   return {
     top: rect.top - top - offsetTop,
-    bottom: rect.bottom - top - offsetTop,
-    left: rect.left - left - offsetLeft,
-    right: rect.right - left - offsetLeft
+    left: rect.left - left - offsetLeft
   }
 }
 

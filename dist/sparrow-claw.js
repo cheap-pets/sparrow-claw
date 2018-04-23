@@ -433,7 +433,7 @@ hackRemoveEventListener(function (type, fn) {
   }
 });
 
-function getClientRect(el) {
+function getClientPosition(el) {
   var _el$parentNode$getBou = el.parentNode.getBoundingClientRect(),
       top = _el$parentNode$getBou.top,
       left = _el$parentNode$getBou.left;
@@ -444,9 +444,7 @@ function getClientRect(el) {
   var rect = el.getBoundingClientRect();
   return {
     top: rect.top - top - offsetTop,
-    bottom: rect.bottom - top - offsetTop,
-    left: rect.left - left - offsetLeft,
-    right: rect.right - left - offsetLeft
+    left: rect.left - left - offsetLeft
   };
 }
 
@@ -480,31 +478,52 @@ function setTransitionTimingFunction(_ref4, type) {
   style.webkitTransitionTimingFunction = type;
 }
 
+function minY(el) {
+  return el.parentNode.clientHeight - el.offsetHeight - el.offsetTop;
+}
+
+function isOut(el, y) {
+  return y > el.offsetTop || y < minY(el);
+}
+
 var scroller = {
   attach: function attach(el) {
-    setTransitionTimingFunction(el, 'cubic-bezier(0, 0, 0.25, 1)');
     el.addEventListener('touchstart', function (event) {
-      console.log(getTransformY(el), getClientRect(el).top);
-      setTransformY(el, getClientRect(el).top);
+      setTransformY(el, getClientPosition(el).top);
       setTransitionDuration(el, 0);
     });
     el.addEventListener('panymove', function (event) {
       var deltaY = event.gestureStatus.changedTouches[0].deltaY;
 
       var transY = getTransformY(el);
+      if (isOut(el, transY + deltaY)) {
+        deltaY /= 2;
+      }
       setTransformY(this, transY + deltaY);
     });
     el.addEventListener('panyend', function (event) {
       var speedY = event.gestureStatus.changedTouches[0].speedY;
 
       if (speedY < -3) speedY = -3;else if (speedY > 3) speedY = 3;
-      console.log(speedY);
       var at = speedY > 0 ? 0.0025 : -0.0025;
       var t = Math.abs(speedY / at);
       var s = speedY * t - at * t * t / 2;
       var transY = getTransformY(el);
-      setTransitionDuration(el, t * 2 / 1000);
-      setTransformY(this, transY + s);
+      var newY = transY + s;
+      var timingFn = 'cubic-bezier(0, 0, 0.25, 1.5)';
+      if (isOut(el, transY)) {
+        newY = transY > 0 ? 0 : minY(el);
+        t = 300;
+      } else if (isOut(el, newY)) {
+        newY = newY > 0 ? 0 : minY(el);
+        t = Math.abs(newY - transY) + 200;
+      } else {
+        t = t * 2;
+        timingFn = 'cubic-bezier(0, 0, 0.25, 1)';
+      }
+      setTransitionTimingFunction(el, timingFn);
+      setTransitionDuration(el, t / 1000);
+      setTransformY(this, newY);
     });
   }
 };
