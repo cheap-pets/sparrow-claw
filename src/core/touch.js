@@ -120,6 +120,7 @@ function recognize (el, event) {
       break
     }
   }
+  if (gs.activeGesture) event.preventDefault()
 }
 
 function initClawContext (claw, event) {
