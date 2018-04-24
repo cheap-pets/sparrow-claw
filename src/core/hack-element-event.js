@@ -15,10 +15,10 @@ function hackRemove (fn, prototype) {
 }
 
 export function hackAddEventListener (fn) {
-  hackAdd(Element.prototype)
-  hackAdd(Document.prototype)
+  hackAdd(fn, Element.prototype)
+  hackAdd(fn, Document.prototype)
 }
 export function hackRemoveEventListener (fn) {
-  hackRemove(Element.prototype)
-  hackRemove(Document.prototype)
+  hackRemove(fn, Element.prototype)
+  hackRemove(fn, Document.prototype)
 }

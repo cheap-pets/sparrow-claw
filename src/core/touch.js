@@ -4,7 +4,7 @@ const touchable = !!document.createTouch
 const gs = { $touches: {} }
 let timer
 
-function calcTouchStatus ({ identifier, pageX, pageY }, isEnd) {
+function calcTouchStatus ({ identifier, pageX, pageY, target }, isEnd) {
   const status = gs.$touches[identifier] || { identifier }
   let { timestamp, startTime, x, y, startX, startY } = status
   const initial = !timestamp
@@ -21,6 +21,7 @@ function calcTouchStatus ({ identifier, pageX, pageY }, isEnd) {
       timestamp,
       deltaTime,
       totalTime,
+      target,
       state: isEnd ? 'end' : initial ? 'start' : 'hold'
     },
     isEnd

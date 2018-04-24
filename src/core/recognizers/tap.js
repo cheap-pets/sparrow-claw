@@ -11,9 +11,7 @@ export const tap = {
     ) {
       return false
     } else if (state === 'end') {
-      dispatchCustomEvent(el, 'tap', status, {
-        canBubble: true
-      })
+      dispatchCustomEvent(el, 'tap', status)
       return true
     }
   },
