@@ -150,7 +150,10 @@ function touchMove (event) {
 }
 
 function touchEnd (event) {
-  if (gs.activeElement && gs.activeElement !== this) return
+  if (gs.activeElement && gs.activeElement !== this) {
+    delete this.$claw.current
+    return
+  }
   setGestureStatus(event)
   recognize(this, event)
   if (gs.over) delete this.$claw.current
