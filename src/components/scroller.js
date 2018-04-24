@@ -53,8 +53,8 @@ export const scroller = {
       setTransitionDuration(el, t / 1000)
       setTransformY(this, newY)
     })
-  },
-  setTop () {
-
+    el.$setScrollTop = function (top) {
+      setTransformY(this, top || 0)
+    }
   }
 }
