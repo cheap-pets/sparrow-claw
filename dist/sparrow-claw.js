@@ -40,11 +40,13 @@ function dispatchCustomEvent(el, type, status, options) {
       canBubble = _ref.canBubble,
       cancelable = _ref.cancelable,
       detail = _ref.detail,
-      originalEvent = _ref.originalEvent;
+      originalEvent = _ref.originalEvent,
+      originalTarget = _ref.originalTarget;
 
   var event = document.createEvent('CustomEvent');
   event.initCustomEvent(type, canBubble === undefined ? false : canBubble, cancelable === undefined ? true : cancelable, detail);
   event.gestureStatus = status;
+  if (originalTarget) event.originalTarget = originalTarget;
   if (originalEvent) event.originalEvent = originalEvent;
   if (el.dispatchEvent(event) === false && originalEvent) {
     originalEvent.preventDefault();
@@ -53,7 +55,7 @@ function dispatchCustomEvent(el, type, status, options) {
 }
 
 var tap = {
-  recognize: function recognize(el, status) {
+  recognize: function recognize(el, status, event) {
     var _options = this.options,
         distance = _options.distance,
         timespan = _options.timespan;
@@ -61,12 +63,17 @@ var tap = {
         totalX = _status$changedTouche.totalX,
         totalY = _status$changedTouche.totalY,
         totalTime = _status$changedTouche.totalTime,
-        state = _status$changedTouche.state;
+        state = _status$changedTouche.state,
+        target = _status$changedTouche.target;
 
     if (timespan > 0 && totalTime > timespan || Math.abs(totalX) > distance || Math.abs(totalY) > distance) {
       return false;
     } else if (state === 'end') {
-      dispatchCustomEvent(el, 'tap', status);
+      dispatchCustomEvent(el, 'tap', status, {
+        originalEvent: event,
+        originalTarget: target,
+        canBubble: true
+      });
       return true;
     }
   },
@@ -189,21 +196,29 @@ var Recognizers = Object.freeze({
 	pany: pany
 });
 
-var prototype = Element.prototype;
-
-function hackAddEventListener(fn) {
-  var originalFn = prototype.addEventListener;
+function hackAdd(fn, prototype) {
+  var oFn = prototype.addEventListener;
   prototype.addEventListener = function (type, listener, options) {
     fn.call(this, type, listener);
-    originalFn.call(this, type, listener, options);
+    oFn.call(this, type, listener, options);
   };
 }
-function hackRemoveEventListener(fn) {
-  var originalFn = prototype.removeEventListener;
+
+function hackRemove(fn, prototype) {
+  var oFn = prototype.removeEventListener;
   prototype.removeEventListener = function (type, listener, options) {
     fn.call(this, type, listener);
-    originalFn.call(this, type, listener, options);
+    oFn.call(this, type, listener, options);
   };
+}
+
+function hackAddEventListener(fn) {
+  hackAdd(fn, Element.prototype);
+  hackAdd(fn, Document.prototype);
+}
+function hackRemoveEventListener(fn) {
+  hackRemove(fn, Element.prototype);
+  hackRemove(fn, Document.prototype);
 }
 
 var touchable = !!document.createTouch;
@@ -215,7 +230,8 @@ var timer = void 0;
 function calcTouchStatus(_ref, isEnd) {
   var identifier = _ref.identifier,
       pageX = _ref.pageX,
-      pageY = _ref.pageY;
+      pageY = _ref.pageY,
+      target = _ref.target;
 
   var status = gs.$touches[identifier] || { identifier: identifier };
   var timestamp = status.timestamp,
@@ -237,6 +253,7 @@ function calcTouchStatus(_ref, isEnd) {
     timestamp: timestamp,
     deltaTime: deltaTime,
     totalTime: totalTime,
+    target: target,
     state: isEnd ? 'end' : initial ? 'start' : 'hold'
   }, isEnd ? {} : {
     startTime: startTime,
@@ -331,7 +348,7 @@ function recognize(el, event) {
   var rs = el.$claw.current;
   for (var key in rs) {
     if (gs.activeGesture && gs.activeGesture !== key) continue;
-    var recognized = rs[key].recognize(el, gs);
+    var recognized = rs[key].recognize(el, gs, event);
     if (recognized === false) {
       delete rs[key];
     } else if (recognized === true) {
@@ -341,6 +358,7 @@ function recognize(el, event) {
       break;
     }
   }
+  if (gs.activeGesture) event.preventDefault();
 }
 
 function initClawContext(claw, event) {
@@ -370,7 +388,10 @@ function touchMove(event) {
 }
 
 function touchEnd(event) {
-  if (gs.activeElement && gs.activeElement !== this) return;
+  if (gs.activeElement && gs.activeElement !== this) {
+    delete this.$claw.current;
+    return;
+  }
   setGestureStatus(event);
   recognize(this, event);
   if (gs.over) delete this.$claw.current;
@@ -478,12 +499,13 @@ function setTransitionTimingFunction(_ref4, type) {
   style.webkitTransitionTimingFunction = type;
 }
 
-function minY(el) {
-  return el.parentNode.clientHeight - el.offsetHeight - el.offsetTop;
+function getMinY(el) {
+  var y = el.parentNode.clientHeight - el.offsetHeight - el.offsetTop;
+  return y > 0 ? 0 : y;
 }
 
-function isOut(el, y) {
-  return y > el.offsetTop || y < minY(el);
+function isOut(el, y, minY) {
+  return y > 0 || y < minY;
 }
 
 var scroller = {
@@ -493,29 +515,35 @@ var scroller = {
       setTransitionDuration(el, 0);
     });
     el.addEventListener('panymove', function (event) {
-      var deltaY = event.gestureStatus.changedTouches[0].deltaY;
+      var gs = event.gestureStatus;
+      var deltaY = gs.changedTouches[0].deltaY;
 
       var transY = getTransformY(el);
-      if (isOut(el, transY + deltaY)) {
+      var minY = getMinY(el);
+      if (isOut(el, transY + deltaY, minY)) {
         deltaY /= 2;
       }
       setTransformY(this, transY + deltaY);
+      gs.scrollMinY = minY;
+      gs.scrollY = transY + deltaY;
     });
     el.addEventListener('panyend', function (event) {
-      var speedY = event.gestureStatus.changedTouches[0].speedY;
+      var gs = event.gestureStatus;
+      var speedY = gs.changedTouches[0].speedY;
 
       if (speedY < -3) speedY = -3;else if (speedY > 3) speedY = 3;
       var at = speedY > 0 ? 0.0025 : -0.0025;
       var t = Math.abs(speedY / at);
       var s = speedY * t - at * t * t / 2;
       var transY = getTransformY(el);
+      var minY = getMinY(el);
       var newY = transY + s;
       var timingFn = 'cubic-bezier(0, 0, 0.25, 1.5)';
-      if (isOut(el, transY)) {
-        newY = transY > 0 ? 0 : minY(el);
+      if (isOut(el, transY, minY)) {
+        newY = transY > 0 ? 0 : minY;
         t = 300;
-      } else if (isOut(el, newY)) {
-        newY = newY > 0 ? 0 : minY(el);
+      } else if (isOut(el, newY, minY)) {
+        newY = newY > 0 ? 0 : minY;
         t = Math.abs(newY - transY) + 200;
       } else {
         t = t * 2;
@@ -524,7 +552,12 @@ var scroller = {
       setTransitionTimingFunction(el, timingFn);
       setTransitionDuration(el, t / 1000);
       setTransformY(this, newY);
+      gs.scrollMinY = minY;
+      gs.scrollY = newY;
     });
+    el.$setScrollTop = function (top) {
+      setTransformY(this, top || 0);
+    };
   }
 };
 

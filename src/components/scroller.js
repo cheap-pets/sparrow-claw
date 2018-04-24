@@ -1,3 +1,5 @@
+import dispatchCustomEvent from '../utils/dispatch-custom-event'
+
 import {
   getClientPosition,
   getTransformY,
@@ -6,13 +8,13 @@ import {
   setTransitionTimingFunction
 } from '../utils/styles'
 
-function minY (el) {
+function getMinY (el) {
   const y = el.parentNode.clientHeight - el.offsetHeight - el.offsetTop
   return y > 0 ? 0 : y
 }
 
-function isOut (el, y) {
-  return y > 0 || y < minY(el)
+function isOut (y, minY) {
+  return y > 0 || y < minY
 }
 
 export const scroller = {
@@ -22,28 +24,35 @@ export const scroller = {
       setTransitionDuration(el, 0)
     })
     el.addEventListener('panymove', function (event) {
-      let { deltaY } = event.gestureStatus.changedTouches[0]
+      const gs = event.gestureStatus
+      let { deltaY } = gs.changedTouches[0]
       const transY = getTransformY(el)
-      if (isOut(el, transY + deltaY)) {
+      const minY = getMinY(el)
+      if (isOut(transY + deltaY, minY)) {
         deltaY /= 2
       }
-      setTransformY(this, transY + deltaY)
+      const newY = transY + deltaY
+      setTransformY(this, newY)
+      gs.scrollMinY = minY
+      gs.scrollY = newY
     })
     el.addEventListener('panyend', function (event) {
-      let { speedY } = event.gestureStatus.changedTouches[0]
+      const gs = event.gestureStatus
+      let { speedY } = gs.changedTouches[0]
       if (speedY < -3) speedY = -3
       else if (speedY > 3) speedY = 3
       const at = speedY > 0 ? 0.0025 : -0.0025
       let t = Math.abs(speedY / at)
       const s = speedY * t - at * t * t / 2
       const transY = getTransformY(el)
+      const minY = getMinY(el)
       let newY = transY + s
       let timingFn = 'cubic-bezier(0, 0, 0.25, 1.5)'
-      if (isOut(el, transY)) {
-        newY = transY > 0 ? 0 : minY(el)
+      if (isOut(transY, minY)) {
+        newY = transY > 0 ? 0 : minY
         t = 300
-      } else if (isOut(el, newY)) {
-        newY = newY > 0 ? 0 : minY(el)
+      } else if (isOut(newY, minY)) {
+        newY = newY > 0 ? 0 : minY
         t = Math.abs(newY - transY) + 200
       } else {
         t = t * 2
@@ -52,6 +61,9 @@ export const scroller = {
       setTransitionTimingFunction(el, timingFn)
       setTransitionDuration(el, t / 1000)
       setTransformY(this, newY)
+      gs.scrollMinY = minY
+      gs.scrollY = transY
+      gs.scrollDirection = speedY > 0 ? 1 : (speedY < 0 ? -1 : 0)
     })
     el.$setScrollTop = function (top) {
       setTransformY(this, top || 0)
