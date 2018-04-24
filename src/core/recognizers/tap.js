@@ -1,7 +1,7 @@
 import dispatchCustomEvent from '../../utils/dispatch-custom-event'
 
 export const tap = {
-  recognize (el, status) {
+  recognize (el, status, event) {
     const { distance, timespan } = this.options
     const { totalX, totalY, totalTime, state, target } = status.changedTouches[0]
     if (
@@ -12,6 +12,7 @@ export const tap = {
       return false
     } else if (state === 'end') {
       dispatchCustomEvent(el, 'tap', status, {
+        originalEvent: event,
         originalTarget: target,
         canBubble: true
       })

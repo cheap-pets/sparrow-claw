@@ -110,7 +110,7 @@ function recognize (el, event) {
   const rs = el.$claw.current
   for (let key in rs) {
     if (gs.activeGesture && gs.activeGesture !== key) continue
-    const recognized = rs[key].recognize(el, gs)
+    const recognized = rs[key].recognize(el, gs, event)
     if (recognized === false) {
       delete rs[key]
     } else if (recognized === true) {
