@@ -138,7 +138,7 @@ var GESTURE_DIRECTION = {
 };
 
 var pan = {
-  recognize: function recognize(el, status, direction) {
+  recognize: function recognize(el, status, event, direction) {
     var eventName = 'pan' + (direction || '');
     var activeGesture = status.activeGesture;
     var distance = this.options.distance;
@@ -171,16 +171,16 @@ var pan = {
 };
 
 var panx = {
-  recognize: function recognize(el, status) {
-    return pan.recognize(el, status, GESTURE_DIRECTION.HORIZONTAL);
+  recognize: function recognize(el, status, event) {
+    return pan.recognize(el, status, event, GESTURE_DIRECTION.HORIZONTAL);
   },
 
   eventTypes: ['panxstart', 'panxmove', 'panxend']
 };
 
 var pany = {
-  recognize: function recognize(el, status) {
-    return pan.recognize(el, status, GESTURE_DIRECTION.VERTICAL);
+  recognize: function recognize(el, status, event) {
+    return pan.recognize(el, status, event, GESTURE_DIRECTION.VERTICAL);
   },
 
   eventTypes: ['panystart', 'panymove', 'panyend']
@@ -229,9 +229,11 @@ var timer = void 0;
 
 function calcTouchStatus(_ref, isEnd) {
   var identifier = _ref.identifier,
+      target = _ref.target,
       pageX = _ref.pageX,
       pageY = _ref.pageY,
-      target = _ref.target;
+      screenX = _ref.screenX,
+      screenY = _ref.screenY;
 
   var status = gs.$touches[identifier] || { identifier: identifier };
   var timestamp = status.timestamp,
@@ -243,8 +245,8 @@ function calcTouchStatus(_ref, isEnd) {
 
   var initial = !timestamp;
   var now = +new Date();
-  var deltaX = initial ? 0 : pageX - x;
-  var deltaY = initial ? 0 : pageY - y;
+  var deltaX = initial ? 0 : screenX - x;
+  var deltaY = initial ? 0 : screenY - y;
   var totalTime = initial ? 0 : now - startTime;
   var deltaTime = initial ? 0 : now - timestamp;
   timestamp = now;
@@ -257,14 +259,16 @@ function calcTouchStatus(_ref, isEnd) {
     state: isEnd ? 'end' : initial ? 'start' : 'hold'
   }, isEnd ? {} : {
     startTime: startTime,
-    x: pageX,
-    y: pageY,
+    x: screenX,
+    y: screenY,
+    pageX: pageX,
+    pageY: pageY,
     deltaX: deltaX,
     deltaY: deltaY,
-    startX: initial ? pageX : startX,
-    startY: initial ? pageY : startY,
-    totalX: initial ? 0 : pageX - startX,
-    totalY: initial ? 0 : pageY - startY,
+    startX: initial ? screenX : startX,
+    startY: initial ? screenY : startY,
+    totalX: initial ? 0 : screenX - startX,
+    totalY: initial ? 0 : screenY - startY,
     speedX: deltaX / (deltaTime || 1),
     speedY: deltaY / (deltaTime || 1)
   });
@@ -302,8 +306,8 @@ function setGestureStatus(event) {
       targetTouches = event.targetTouches,
       changedTouches = event.changedTouches,
       type = event.type,
-      pageX = event.pageX,
-      pageY = event.pageY;
+      screenX = event.screenX,
+      screenY = event.screenY;
 
   if ($clawed) return;
 
@@ -332,7 +336,7 @@ function setGestureStatus(event) {
     }
   } else {
     if (type !== 'mousedown' && !Object.keys(gs.$touches).length) return;
-    var _status2 = calcTouchStatus({ identifier: 0, pageX: pageX, pageY: pageY }, type === 'mouseup');
+    var _status2 = calcTouchStatus({ identifier: 0, screenX: screenX, screenY: screenY }, type === 'mouseup');
     if (type !== 'mouseup') gs.touches.push(_status2);
     gs.changedTouches.push(_status2);
     gs.targetTouches.push(_status2);
@@ -358,7 +362,7 @@ function recognize(el, event) {
       break;
     }
   }
-  if (gs.activeGesture) event.preventDefault();
+  if (gs.activeGesture && el !== document) event.preventDefault();
 }
 
 function initClawContext(claw, event) {
@@ -504,7 +508,7 @@ function getMinY(el) {
   return y > 0 ? 0 : y;
 }
 
-function isOut(el, y, minY) {
+function isOut(y, minY) {
   return y > 0 || y < minY;
 }
 
@@ -520,12 +524,13 @@ var scroller = {
 
       var transY = getTransformY(el);
       var minY = getMinY(el);
-      if (isOut(el, transY + deltaY, minY)) {
+      if (isOut(transY + deltaY, minY)) {
         deltaY /= 2;
       }
-      setTransformY(this, transY + deltaY);
+      var newY = transY + deltaY;
+      setTransformY(this, newY);
       gs.scrollMinY = minY;
-      gs.scrollY = transY + deltaY;
+      gs.scrollY = newY;
     });
     el.addEventListener('panyend', function (event) {
       var gs = event.gestureStatus;
@@ -539,10 +544,10 @@ var scroller = {
       var minY = getMinY(el);
       var newY = transY + s;
       var timingFn = 'cubic-bezier(0, 0, 0.25, 1.5)';
-      if (isOut(el, transY, minY)) {
+      if (isOut(transY, minY)) {
         newY = transY > 0 ? 0 : minY;
         t = 300;
-      } else if (isOut(el, newY, minY)) {
+      } else if (isOut(newY, minY)) {
         newY = newY > 0 ? 0 : minY;
         t = Math.abs(newY - transY) + 200;
       } else {
@@ -553,7 +558,8 @@ var scroller = {
       setTransitionDuration(el, t / 1000);
       setTransformY(this, newY);
       gs.scrollMinY = minY;
-      gs.scrollY = newY;
+      gs.scrollY = transY;
+      gs.scrollDirection = speedY > 0 ? 1 : speedY < 0 ? -1 : 0;
     });
     el.$setScrollTop = function (top) {
       setTransformY(this, top || 0);

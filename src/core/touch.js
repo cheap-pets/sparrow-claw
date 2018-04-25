@@ -4,13 +4,13 @@ const touchable = !!document.createTouch
 const gs = { $touches: {} }
 let timer
 
-function calcTouchStatus ({ identifier, pageX, pageY, target }, isEnd) {
+function calcTouchStatus ({ identifier, target, pageX, pageY, screenX, screenY }, isEnd) {
   const status = gs.$touches[identifier] || { identifier }
   let { timestamp, startTime, x, y, startX, startY } = status
   const initial = !timestamp
   const now = +new Date()
-  const deltaX = initial ? 0 : pageX - x
-  const deltaY = initial ? 0 : pageY - y
+  const deltaX = initial ? 0 : screenX - x
+  const deltaY = initial ? 0 : screenY - y
   const totalTime = initial ? 0 : now - startTime
   const deltaTime = initial ? 0 : now - timestamp
   timestamp = now
@@ -28,14 +28,16 @@ function calcTouchStatus ({ identifier, pageX, pageY, target }, isEnd) {
       ? {}
       : {
         startTime,
-        x: pageX,
-        y: pageY,
+        x: screenX,
+        y: screenY,
+        pageX,
+        pageY,
         deltaX,
         deltaY,
-        startX: initial ? pageX : startX,
-        startY: initial ? pageY : startY,
-        totalX: initial ? 0 : pageX - startX,
-        totalY: initial ? 0 : pageY - startY,
+        startX: initial ? screenX : startX,
+        startY: initial ? screenY : startY,
+        totalX: initial ? 0 : screenX - startX,
+        totalY: initial ? 0 : screenY - startY,
         speedX: deltaX / (deltaTime || 1),
         speedY: deltaY / (deltaTime || 1)
       }
@@ -66,7 +68,7 @@ function updateHoldStatus () {
 }
 
 function setGestureStatus (event) {
-  const { $clawed, touches, targetTouches, changedTouches, type, pageX, pageY } = event
+  const { $clawed, touches, targetTouches, changedTouches, type, screenX, screenY } = event
   if ($clawed) return
 
   timer && clearTimeout(timer)
@@ -94,7 +96,7 @@ function setGestureStatus (event) {
     }
   } else {
     if (type !== 'mousedown' && !Object.keys(gs.$touches).length) return
-    const status = calcTouchStatus({ identifier: 0, pageX, pageY }, type === 'mouseup')
+    const status = calcTouchStatus({ identifier: 0, screenX, screenY }, type === 'mouseup')
     if (type !== 'mouseup') gs.touches.push(status)
     gs.changedTouches.push(status)
     gs.targetTouches.push(status)

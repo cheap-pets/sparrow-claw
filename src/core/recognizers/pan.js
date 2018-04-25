@@ -2,7 +2,7 @@ import dispatchCustomEvent from '../../utils/dispatch-custom-event'
 import { GESTURE_DIRECTION } from '../constant'
 
 const pan = {
-  recognize (el, status, direction) {
+  recognize (el, status, event, direction) {
     const eventName = 'pan' + (direction || '')
     const { activeGesture } = status
     const { distance } = this.options
@@ -33,15 +33,15 @@ const pan = {
 }
 
 const panx = {
-  recognize (el, status) {
-    return pan.recognize(el, status, GESTURE_DIRECTION.HORIZONTAL)
+  recognize (el, status, event) {
+    return pan.recognize(el, status, event, GESTURE_DIRECTION.HORIZONTAL)
   },
   eventTypes: ['panxstart', 'panxmove', 'panxend']
 }
 
 const pany = {
-  recognize (el, status) {
-    return pan.recognize(el, status, GESTURE_DIRECTION.VERTICAL)
+  recognize (el, status, event) {
+    return pan.recognize(el, status, event, GESTURE_DIRECTION.VERTICAL)
   },
   eventTypes: ['panystart', 'panymove', 'panyend']
 }

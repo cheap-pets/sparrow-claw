@@ -1,5 +1,3 @@
-import dispatchCustomEvent from '../utils/dispatch-custom-event'
-
 import {
   getClientPosition,
   getTransformY,
