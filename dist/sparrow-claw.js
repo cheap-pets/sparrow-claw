@@ -145,12 +145,13 @@ var pan = {
     var _status$changedTouche = status.changedTouches[0],
         totalX = _status$changedTouche.totalX,
         totalY = _status$changedTouche.totalY,
-        state = _status$changedTouche.state;
+        state = _status$changedTouche.state,
+        target = _status$changedTouche.target;
 
     var x = Math.abs(totalX);
     var y = Math.abs(totalY);
     if (!activeGesture) {
-      if (direction === GESTURE_DIRECTION.HORIZONTAL && y > distance || direction === GESTURE_DIRECTION.VERTICAL && x > distance) {
+      if (direction === GESTURE_DIRECTION.HORIZONTAL && y > distance || direction === GESTURE_DIRECTION.VERTICAL && x > distance || target.tagName.toLowerCase() === 'textarea' && target.scrollHeight > target.clientheight) {
         return false;
       } else if (x > distance || y > distance) {
         dispatchCustomEvent(el, eventName + 'start', status);

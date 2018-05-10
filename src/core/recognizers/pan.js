@@ -6,13 +6,14 @@ const pan = {
     const eventName = 'pan' + (direction || '')
     const { activeGesture } = status
     const { distance } = this.options
-    const { totalX, totalY, state } = status.changedTouches[0]
+    const { totalX, totalY, state, target } = status.changedTouches[0]
     const x = Math.abs(totalX)
     const y = Math.abs(totalY)
     if (!activeGesture) {
       if (
         (direction === GESTURE_DIRECTION.HORIZONTAL && y > distance) ||
-        (direction === GESTURE_DIRECTION.VERTICAL && x > distance)
+        (direction === GESTURE_DIRECTION.VERTICAL && x > distance) ||
+        (target.tagName.toLowerCase() === 'textarea' && target.scrollHeight > target.clientheight)
       ) {
         return false
       } else if (x > distance || y > distance) {
