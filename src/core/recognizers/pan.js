@@ -13,7 +13,7 @@ const pan = {
       if (
         (direction === GESTURE_DIRECTION.HORIZONTAL && y > distance) ||
         (direction === GESTURE_DIRECTION.VERTICAL && x > distance) ||
-        (target.tagName.toLowerCase() === 'textarea' && target.scrollHeight > target.clientheight)
+        (target.tagName.toLowerCase() === 'textarea' && target.scrollHeight > target.clientHeight)
       ) {
         return false
       } else if (x > distance || y > distance) {
