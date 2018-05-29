@@ -1,4 +1,4 @@
-import './utils/polyfill'
+// import './utils/polyfill'
 import './core'
 import * as Recognizers from './core/recognizers'
 
