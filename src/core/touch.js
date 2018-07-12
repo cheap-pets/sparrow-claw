@@ -96,7 +96,7 @@ function setGestureStatus (event) {
     }
   } else {
     if (type !== 'mousedown' && !Object.keys(gs.$touches).length) return
-    const status = calcTouchStatus({ identifier: 0, screenX, screenY }, type === 'mouseup')
+    const status = calcTouchStatus({ identifier: 0, screenX, screenY, target: event.target }, type === 'mouseup')
     if (type !== 'mouseup') gs.touches.push(status)
     gs.changedTouches.push(status)
     gs.targetTouches.push(status)
