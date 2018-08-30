@@ -1,4 +1,4 @@
-const touchable = !!(document.createTouch || window.touch)
+const touchable = !!(document.createTouch || window.Touch)
 
 // global gesture status && timer
 const gs = { $touches: {} }
