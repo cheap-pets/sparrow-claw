@@ -2,15 +2,13 @@
   "name": "sparrow-claw",
   "version": "0.2.10",
   "description": "a easier gesture lib",
-  "main": "dist/sparrow-claw.js",
   "module": "src/index.js",
   "scripts": {
     "build": "node build.js"
   },
   "author": "scrollbar.ww",
   "files": [
-    "src",
-    "dist"
+    "src"
   ],
   "keywords": [
     "sparrow"
@@ -30,6 +28,6 @@
     "rollup-plugin-node-resolve": "^3.0.0"
   },
   "dependencies": {
-    "sparrow-device-query": "^1.0.0"
+    "is-touch-device": "^1.0.1"
   }
 }

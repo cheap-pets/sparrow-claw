@@ -151,7 +151,7 @@ var pan = {
     var x = Math.abs(totalX);
     var y = Math.abs(totalY);
     if (!activeGesture) {
-      if (direction === GESTURE_DIRECTION.HORIZONTAL && y > distance || direction === GESTURE_DIRECTION.VERTICAL && x > distance || target.tagName.toLowerCase() === 'textarea' && target.scrollHeight > target.clientheight) {
+      if (direction === GESTURE_DIRECTION.HORIZONTAL && y > distance || direction === GESTURE_DIRECTION.VERTICAL && x > distance || String(target.tagName).toLowerCase() === 'textarea' && target.scrollHeight > target.clientheight) {
         return false;
       } else if (x > distance || y > distance) {
         dispatchCustomEvent(el, eventName + 'start', status);

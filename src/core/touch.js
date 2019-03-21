@@ -1,4 +1,6 @@
-const touchable = !!(document.createTouch || window.Touch)
+import isTouchDevice from 'is-touch-device'
+
+const touchable = isTouchDevice
 
 // global gesture status && timer
 const gs = { $touches: {} }
