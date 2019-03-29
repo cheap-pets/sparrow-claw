@@ -1,6 +1,6 @@
 import isTouchDevice from 'is-touch-device'
 
-const touchable = isTouchDevice
+const touchable = isTouchDevice()
 
 // global gesture status && timer
 const gs = { $touches: {} }

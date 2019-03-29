@@ -1,6 +1,6 @@
 {
   "name": "sparrow-claw",
-  "version": "0.2.10",
+  "version": "0.2.12",
   "description": "a easier gesture lib",
   "module": "src/index.js",
   "scripts": {
